@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DiseaseNet - Enhanced</title>
+    <link href="https://fonts.googleapis.com/css2?family=Glacial+Indifference&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Glacial Indifference', sans-serif;
+            transition: background-color 1s ease-in-out;
+        }
+
+        .shared-background {
+            background-image: url('/static/images/image.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            position: relative;
+            transition: all 0.5s ease-in-out;
+        }
+
+        .shared-background::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.3);
+            z-index: 1;
+        }
+
+        .shared-background > * {
+            z-index: 2;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 10px;
+        }
+
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        .search-container {
+            position: relative;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .search-bar {
+            border: 2px solid white;
+            padding: 12px 15px;
+            width: 100%;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .search-bar::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .search-bar:focus {
+            background-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Autocomplete dropdown */
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: rgba(28, 20, 28, 0.95);
+            border: 2px solid white;
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+            z-index: 1000;
+        }
+
+        .autocomplete-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            transition: background-color 0.2s;
+        }
+
+        .autocomplete-item:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        /* ALL BUTTONS - Consistent styling */
+        .search-btn, .example-btn, .recent-item {
+            padding: 12px 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid white;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 5px;
+            transition: all 0.3s;
+            margin: 10px 5px;
+        }
+
+        .search-btn, .example-btn {
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .search-btn:hover, .example-btn:hover, .recent-item:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .example-diseases {
+            margin-top: 30px;
+        }
+
+        .example-diseases p {
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        /* Recent searches */
+        .recent-searches {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            max-width: 500px;
+        }
+
+        .recent-searches h3 {
+            font-size: 1rem;
+            margin-bottom: 15px;
+        }
+
+        .recent-item {
+            display: inline-block;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* Progress bar */
+        .progress-container {
+            width: 80%;
+            max-width: 600px;
+            margin-top: 30px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #75331e, #a0522d);
+            width: 0%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .progress-text {
+            margin-top: 15px;
+            font-size: 1rem;
+        }
+
+        .estimated-time {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Results page with background */
+        #results-page {
+            display: none;
+            background-image: url('/static/images/image.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: white;
+            padding: 50px 20px;
+            position: relative;
+            min-height: 100vh;
+        }
+
+        #results-page::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1;
+        }
+
+        #results-page > * {
+            position: relative;
+            z-index: 2;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 12px 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid white;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 5px;
+            transition: all 0.3s;
+            z-index: 100;
+            margin: 0;
+        }
+
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .export-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 25px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid white;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 5px;
+            transition: all 0.3s;
+            z-index: 100;
+            margin: 0;
+        }
+
+        .export-btn:hover {
+            background-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .results-header {
+            margin: 60px 0 30px 0;
+            text-align: center;
+        }
+
+        /* Table controls */
+        .table-controls {
+            margin: 20px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-filter {
+            padding: 10px 15px;
+            border-radius: 5px;
+            border: 2px solid white;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .search-filter::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        /* Table styling */
+        .table-wrapper {
+            overflow-x: auto;
+            max-height: 70vh;
+            border: 2px solid white;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            background-color: rgba(42, 31, 42, 0.95);
+            z-index: 10;
+        }
+
+        th {
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 15px;
+            text-align: left;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+        }
+
+        th:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        th.sortable::after {
+            content: ' ⇅';
+            font-size: 0.8rem;
+            opacity: 0.5;
+        }
+
+        th.sort-asc::after {
+            content: ' ▲';
+            opacity: 1;
+        }
+
+        th.sort-desc::after {
+            content: ' ▼';
+            opacity: 1;
+        }
+
+        td {
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            padding-right: 80px;
+            min-height: 80px;
+            text-align: left;
+            position: relative;
+            transition: background-color 0.2s;
+            vertical-align: top;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Cell highlighting when copied */
+        td.copied-cell {
+            background-color: rgba(117, 51, 30, 0.6) !important;
+            border: 2px solid #ff9800 !important;
+        }
+
+        /* Copy button that appears on hover */
+        .copy-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid white;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s, background-color 0.2s;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        td:hover .copy-btn {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .copy-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Suggestions styling */
+        .suggestions-box {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid white;
+            border-radius: 10px;
+            max-width: 600px;
+        }
+
+        .suggestion-item {
+            padding: 12px;
+            margin: 10px 0;
+            background-color: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .suggestion-item:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+            transform: translateX(10px);
+        }
+
+        .suggestion-score {
+            font-size: 0.9rem;
+            opacity: 0.7;
+            margin-top: 5px;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            margin: 20px auto;
+            border: 5px solid rgba(255, 255, 255, 0.2);
+            border-top: 5px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Copy notification tooltip */
+        .copy-tooltip {
+            position: fixed;
+            background-color: rgba(117, 51, 30, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+            border: 1px solid white;
+        }
+
+        .copy-tooltip.show {
+            opacity: 1;
+        }
+
+        /* Responsive design */
+        @media screen and (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .search-container {
+                width: 90%;
+            }
+
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .back-btn, .export-btn {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                margin: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Copy tooltip -->
+    <div id="copy-tooltip" class="copy-tooltip">Copied to clipboard!</div>
+
+    <!-- Home Page -->
+    <div id="first-page" class="shared-background">
+        <h1>DiseaseNet</h1>
+        <h2>Access Comprehensive Disease Information with a Single Search</h2>
+        
+        <div class="search-container">
+            <input type="text" id="disease_name" class="search-bar" placeholder="Enter Disease Name" autocomplete="off">
+            <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
+        </div>
+        
+        <button class="search-btn" onclick="submitSearch()">Search</button>
+        
+        <div class="example-diseases">
+            <p>Try searching for:</p>
+            <button class="example-btn" onclick="searchExample('Diabetes mellitus')">Diabetes</button>
+            <button class="example-btn" onclick="searchExample('Alzheimer disease')">Alzheimer's</button>
+            <button class="example-btn" onclick="searchExample('Breast cancer')">Breast Cancer</button>
+            <button class="example-btn" onclick="searchExample('Atopic dermatitis')">Atopic Dermatitis</button>
+        </div>
+        
+        <div id="recent-searches" class="recent-searches" style="display: none;">
+            <h3>Recent Searches</h3>
+            <div id="recent-items"></div>
+        </div>
+    </div>
+
+    <!-- Retrieving Info Section -->
+    <div id="retrieving-info" class="shared-background" style="display: none;">
+        <h2 id="status-message">Retrieving information...</h2>
+        <div class="spinner"></div>
+        
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill">0%</div>
+            </div>
+            <div id="progress-text" class="progress-text">Initializing...</div>
+            <div id="estimated-time" class="estimated-time">Estimated time: 30-60 seconds</div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results-page">
+        <button class="back-btn" onclick="goBackToHome()">← Back to Search</button>
+        <button class="export-btn" onclick="exportToCSV()">Export CSV</button>
+        
+        <div class="results-header">
+            <h2>Results for: <span id="disease-name-result"></span></h2>
+        </div>
+        
+        <div class="table-controls">
+            <input type="text" id="table-search" class="search-filter" placeholder="Filter by gene name or receptor..." onkeyup="filterTable()">
+            <div>
+                <span id="result-count" style="opacity: 0.8;"></span>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            <table id="results-table">
+                <thead>
+                    <tr>
+                        <th class="sortable" onclick="sortTable(0)">Gene Name</th>
+                        <th class="sortable" onclick="sortTable(1)">Gene ID</th>
+                        <th class="sortable" onclick="sortTable(2)">UniProt ID</th>
+                        <th class="sortable" onclick="sortTable(3)">Protein Name</th>
+                        <th class="sortable" onclick="sortTable(4)">Receptors (Interacting)</th>
+                        <th class="sortable" onclick="sortTable(5)">Functional Role</th>
+                        <th class="sortable" onclick="sortTable(6)">PDB ID</th>
+                        <th class="sortable" onclick="sortTable(7)">Ligands</th>
+                    </tr>
+                </thead>
+                <tbody id="results-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let currentData = [];
+        let sortColumn = -1;
+        let sortAscending = true;
+        let eventSource = null;
+        let currentCopiedCell = null;
+
+        // Load recent searches on page load
+        window.onload = function() {
+            loadRecentSearches();
+            
+            // Add input event for autocomplete
+            document.getElementById('disease_name').addEventListener('input', debounce(autocomplete, 300));
+            
+            // Add enter key support
+            document.getElementById('disease_name').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    submitSearch();
+                }
+            });
+        };
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function autocomplete() {
+            const input = document.getElementById('disease_name').value;
+            const dropdown = document.getElementById('autocomplete-dropdown');
+            
+            if (input.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            fetch('/suggest', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({disease_name: input})
+            })
+            .then(response => response.json())
+            .then(suggestions => {
+                if (suggestions.length > 0) {
+                    dropdown.innerHTML = '';
+                    suggestions.slice(0, 5).forEach(suggestion => {
+                        const item = document.createElement('div');
+                        item.className = 'autocomplete-item';
+                        item.innerHTML = `<div>${suggestion.name}</div><div style="font-size: 0.8rem; opacity: 0.7;">Match: ${suggestion.score}%</div>`;
+                        item.onclick = () => {
+                            document.getElementById('disease_name').value = suggestion.name;
+                            dropdown.style.display = 'none';
+                            submitSearch();
+                        };
+                        dropdown.appendChild(item);
+                    });
+                    dropdown.style.display = 'block';
+                } else {
+                    dropdown.style.display = 'none';
+                }
+            })
+            .catch(error => {
+                console.error('Autocomplete error:', error);
+                dropdown.style.display = 'none';
+            });
+        }
+
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-container')) {
+                document.getElementById('autocomplete-dropdown').style.display = 'none';
+            }
+        });
+
+        function loadRecentSearches() {
+            fetch('/recent_searches')
+            .then(response => response.json())
+            .then(searches => {
+                if (searches.length > 0) {
+                    const container = document.getElementById('recent-items');
+                    const recentDiv = document.getElementById('recent-searches');
+                    container.innerHTML = '';
+                    searches.forEach(search => {
+                        const item = document.createElement('span');
+                        item.className = 'recent-item';
+                        item.textContent = search;
+                        item.onclick = () => {
+                            document.getElementById('disease_name').value = search;
+                            submitSearch();
+                        };
+                        container.appendChild(item);
+                    });
+                    recentDiv.style.display = 'block';
+                }
+            })
+            .catch(error => console.error('Error loading recent searches:', error));
+        }
+
+        function searchExample(diseaseName) {
+            document.getElementById('disease_name').value = diseaseName;
+            submitSearch();
+        }
+
+        function submitSearch() {
+            const diseaseName = document.getElementById('disease_name').value.trim();
+            if (!diseaseName) return;
+            
+            // Hide autocomplete
+            document.getElementById('autocomplete-dropdown').style.display = 'none';
+            
+            // Transition to loading page
+            document.getElementById('first-page').style.display = 'none';
+            document.getElementById('retrieving-info').style.display = 'flex';
+            
+            // Reset progress
+            simulatedProgress = 0;
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('progress-fill').textContent = '0%';
+            document.getElementById('progress-text').textContent = 'Initializing...';
+            
+            fetchResults(diseaseName);
+        }
+
+        let progressInterval = null;
+
+        function fetchResults(diseaseName) {
+            // Start progress polling
+            progressInterval = setInterval(updateProgress, 500);
+            
+            fetch('/process', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({disease_name: diseaseName})
+            })
+            .then(response => {
+                if (progressInterval) clearInterval(progressInterval);
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 404) {
+                    return response.json().then(data => {
+                        throw {notFound: true, suggestions: data.suggestions};
+                    });
+                } else {
+                    throw new Error('Failed to fetch data');
+                }
+            })
+            .then(data => {
+                if (progressInterval) clearInterval(progressInterval);
+                displayResults(diseaseName, data);
+            })
+            .catch(error => {
+                if (progressInterval) clearInterval(progressInterval);
+                if (error.notFound && error.suggestions) {
+                    displaySuggestions(diseaseName, error.suggestions);
+                } else {
+                    console.error('Error:', error);
+                    alert('Failed to fetch data. Please try again.');
+                    goBackToHome();
+                }
+            });
+        }
+
+        let simulatedProgress = 0;
+        function updateProgress() {
+            // Simulate progress (since we can't get real-time updates easily)
+            if (simulatedProgress < 90) {
+                simulatedProgress += Math.random() * 3;
+                const progressFill = document.getElementById('progress-fill');
+                const progressText = document.getElementById('progress-text');
+                
+                progressFill.style.width = simulatedProgress + '%';
+                progressFill.textContent = Math.floor(simulatedProgress) + '%';
+                
+                if (simulatedProgress < 30) {
+                    progressText.textContent = 'Fetching disease information...';
+                } else if (simulatedProgress < 60) {
+                    progressText.textContent = 'Processing genes...';
+                } else {
+                    progressText.textContent = 'Retrieving ligand data...';
+                }
+            }
+        }
+
+        function displaySuggestions(searchedName, suggestions) {
+            document.getElementById('retrieving-info').style.display = 'none';
+            document.getElementById('first-page').style.display = 'flex';
+            
+            const oldSuggestions = document.getElementById('suggestions-container');
+            if (oldSuggestions) {
+                oldSuggestions.remove();
+            }
+            
+            const suggestionsBox = document.createElement('div');
+            suggestionsBox.id = 'suggestions-container';
+            suggestionsBox.className = 'suggestions-box';
+            suggestionsBox.innerHTML = '<h3>No exact match found. Did you mean:</h3>';
+            
+            suggestions.forEach(suggestion => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                item.innerHTML = `
+                    <div style="font-weight: bold;">${suggestion.name}</div>
+                    <div class="suggestion-score">Match: ${suggestion.score}%</div>
+                `;
+                item.onclick = () => {
+                    document.getElementById('disease_name').value = suggestion.name;
+                    suggestionsBox.remove();
+                    submitSearch();
+                };
+                suggestionsBox.appendChild(item);
+            });
+            
+            document.getElementById('first-page').appendChild(suggestionsBox);
+        }
+
+        function displayResults(diseaseName, data) {
+            document.getElementById('retrieving-info').style.display = 'none';
+            document.getElementById('results-page').style.display = 'block';
+            
+            currentData = data;
+            
+            document.getElementById('disease-name-result').textContent = diseaseName;
+            const tableBody = document.getElementById('results-table-body');
+            tableBody.innerHTML = '';
+            
+            if (Array.isArray(data) && data.length > 0) {
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><span class="cell-content">${row['Gene Name']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['Gene ID']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['UniProt ID']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['Protein Name']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['Receptors (Interacting)']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['Functional Role']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['PDB ID']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                        <td><span class="cell-content">${row['Ligands']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+                updateResultCount(data.length, data.length);
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No data found</td></tr>';
+                updateResultCount(0, 0);
+            }
+            
+            loadRecentSearches();
+        }
+
+        function copyToClipboard(button, event) {
+            event.stopPropagation();
+            const cell = button.parentElement;
+            const text = cell.querySelector('.cell-content').textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Remove highlight from previously copied cell
+                if (currentCopiedCell) {
+                    currentCopiedCell.classList.remove('copied-cell');
+                }
+                
+                // Highlight current cell
+                cell.classList.add('copied-cell');
+                currentCopiedCell = cell;
+                
+                // Show tooltip
+                showCopyTooltip(event.clientX, event.clientY);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        function showCopyTooltip(x, y) {
+            const tooltip = document.getElementById('copy-tooltip');
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = (y - 40) + 'px';
+            tooltip.classList.add('show');
+            setTimeout(() => tooltip.classList.remove('show'), 1500);
+        }
+
+        function filterTable() {
+            const input = document.getElementById('table-search').value.toLowerCase();
+            const tableBody = document.getElementById('results-table-body');
+            const rows = tableBody.getElementsByTagName('tr');
+            let visibleCount = 0;
+            
+            for (let i = 0; i < rows.length; i++) {
+                const cells = rows[i].getElementsByTagName('td');
+                let found = false;
+                
+                for (let j = 0; j < cells.length; j++) {
+                    const cellText = cells[j].textContent.toLowerCase();
+                    if (cellText.includes(input)) {
+                        found = true;
+                        break;
+                    }
+                }
+                
+                if (found) {
+                    rows[i].style.display = '';
+                    visibleCount++;
+                } else {
+                    rows[i].style.display = 'none';
+                }
+            }
+            
+            updateResultCount(visibleCount, currentData.length);
+        }
+
+        function updateResultCount(visible, total) {
+            const countElem = document.getElementById('result-count');
+            if (visible === total) {
+                countElem.textContent = `Showing ${total} result${total !== 1 ? 's' : ''}`;
+            } else {
+                countElem.textContent = `Showing ${visible} of ${total} results`;
+            }
+        }
+
+        function sortTable(columnIndex) {
+            const table = document.getElementById('results-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+            
+            if (sortColumn === columnIndex) {
+                sortAscending = !sortAscending;
+            } else {
+                sortColumn = columnIndex;
+                sortAscending = true;
+            }
+            
+            rows.sort((a, b) => {
+                const aValue = a.cells[columnIndex].textContent.trim();
+                const bValue = b.cells[columnIndex].textContent.trim();
+                
+                const aNum = parseFloat(aValue);
+                const bNum = parseFloat(bValue);
+                
+                let comparison = 0;
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    comparison = aNum - bNum;
+                } else {
+                    comparison = aValue.localeCompare(bValue);
+                }
+                
+                return sortAscending ? comparison : -comparison;
+            });
+            
+            rows.forEach(row => tbody.appendChild(row));
+            
+            // Update sort indicators
+            const headers = table.querySelectorAll('th');
+            headers.forEach((header, index) => {
+                header.classList.remove('sort-asc', 'sort-desc');
+                if (index === columnIndex) {
+                    header.classList.add(sortAscending ? 'sort-asc' : 'sort-desc');
+                }
+            });
+        }
+
+        function exportToCSV() {
+            const diseaseName = document.getElementById('disease-name-result').textContent;
+            
+            fetch('/export_csv', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    data: currentData,
+                    disease_name: diseaseName
+                })
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${diseaseName.replace(/\s+/g, '_')}_results.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            })
+            .catch(error => {
+                console.error('Export error:', error);
+                alert('Failed to export CSV');
+            });
+        }
+
+        function goBackToHome() {
+            document.getElementById('results-page').style.display = 'none';
+            document.getElementById('first-page').style.display = 'flex';
+            document.getElementById('disease_name').value = '';
+            
+            const oldSuggestions = document.getElementById('suggestions-container');
+            if (oldSuggestions) {
+                oldSuggestions.remove();
+            }
+            
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            simulatedProgress = 0;
+            currentCopiedCell = null;
+        }
+    </script>
+</body>
+</html>
