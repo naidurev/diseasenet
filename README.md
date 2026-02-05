@@ -217,7 +217,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 📧 Contact
 
-**Author**: Rev  
+**Author**: Austin Gilbride, Brigita Medelyte, Revanth Naidu  
 **Institution**: Universitat Pompeu Fabra (UPF)  
 **Program**: MSc Bioinformatics for Health Sciences  
 **Year**: 2024-2025
