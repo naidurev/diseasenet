@@ -145,18 +145,32 @@ def retrieve_kegg_pathway_details(pathways):
     return pathway_details
 
 def parse_kgml(kgml_data):
-    """Parse KGML for genes and proteins"""
+    """Parse KGML for genes and proteins; capture KEGG gene id from entry@name."""
     root = ET.fromstring(kgml_data)
     genes_proteins = []
     for entry in root.findall('entry'):
-        if entry.get('type') == 'gene' or entry.get('type') == 'protein':
+        if entry.get('type') in ('gene', 'protein'):
             graphics = entry.find('graphics')
-            if graphics is not None:
-                gene_name = graphics.get('name')
-                if gene_name:
-                    gene_id = entry.get('id')
-                    genes_proteins.append({'id': gene_id, 'name': gene_name.split(",")[0].strip()})
+            if graphics is None:
+                continue
+
+            gene_label = graphics.get('name')
+            if not gene_label:
+                continue
+
+            # This is the KEGG identifier like "hsa:2099 hsa:xxxx" sometimes space-separated
+            kegg_gene_name = entry.get('name')  # e.g. "hsa:2099"
+            if kegg_gene_name:
+                kegg_gene_id = kegg_gene_name.split()[0].strip()
+            else:
+                kegg_gene_id = None
+
+            genes_proteins.append({
+                'name': gene_label.split(",")[0].strip(),  # symbol-like label
+                'kegg_gene_id': kegg_gene_id
+            })
     return genes_proteins
+
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def query_protein_info_uniprot(uniprot_id):
@@ -313,34 +327,47 @@ def process_gene(gene_name, progress_callback=None):
     """Process each gene - main data gathering function"""
     try:
         logger.info(f"Processing gene: {gene_name}")
-        
+
+        # Always initialize these so they exist in all branches
+        ligands_struct = []
+        ligands = []
+
         # Query UniProt for receptor and gene ID
         uniprot_gene_name, uniprot_id = query_gene_name_and_id_uniprot(gene_name)
         receptors = query_receptors_uniprot(gene_name)
-        
+
         # Query PubChem for gene ID and ligands
         gene_id = get_gene_id_pubchem(gene_name)
-        ligands = ["No gene ID found"]
-        
+
         if gene_id:
             bioactivity_data = get_bioactivity_data(gene_id)
             if bioactivity_data:
                 sorted_ligands = sorted(bioactivity_data, key=lambda x: x['Potency'])[:5]
-                ligands = [f"{get_compound_name(ligand['CID'])} ({ligand['Potency']} uM)" for ligand in sorted_ligands]
+
+                for ligand in sorted_ligands:
+                    cid = str(ligand["CID"])
+                    potency = float(ligand["Potency"])
+                    name = get_compound_name(cid)
+
+                    ligands.append(f"{name} ({potency} uM)")
+                    ligands_struct.append({"cid": cid, "name": name, "potency_um": potency})
             else:
                 ligands = ["No ligand data available"]
+                # ligands_struct stays []
                 logger.warning(f"No bioactivity data found for gene {gene_name} (gene_id: {gene_id})")
         else:
+            ligands = ["No gene ID found"]
+            # ligands_struct stays []
             logger.warning(f"No PubChem gene ID found for {gene_name}")
-        
+
         # Query for protein name, functional role, and PDB IDs
         if uniprot_id != "N/A":
             protein_name, functional_role, pdb_ids = query_protein_info_uniprot(uniprot_id)
         else:
             protein_name, functional_role, pdb_ids = "Protein name not available", "Functional role not available", []
-        
+
         pdb_id_str = ', '.join(pdb_ids) if pdb_ids else "No PDB IDs"
-        
+
         result = {
             'Gene Name': gene_name,
             'Gene ID': gene_id if gene_id else "N/A",
@@ -349,12 +376,13 @@ def process_gene(gene_name, progress_callback=None):
             'PDB ID': pdb_id_str,
             'Receptors (Interacting)': ', '.join(receptors) if receptors else "No receptor interaction",
             'Functional Role': functional_role,
-            'Ligands': '; '.join(ligands)
+            'Ligands': '; '.join(ligands) if ligands else "No ligand data available",
+            'ligands_struct': ligands_struct,   # ALWAYS present now
         }
-        
+
         logger.info(f"Successfully processed gene: {gene_name}")
         return result
-        
+
     except Exception as e:
         logger.error(f"Error processing gene {gene_name}: {e}")
         return {
@@ -365,51 +393,68 @@ def process_gene(gene_name, progress_callback=None):
             'PDB ID': "Error",
             'Receptors (Interacting)': "Error",
             'Functional Role': "Error",
-            'Ligands': "Error"
+            'Ligands': "Error",
+            'ligands_struct': [],              # also always present here
         }
 
 def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
     """Main function to build the gene/receptor/ligand table"""
     logger.info(f"Building table for disease: {disease_name}")
-    
+
     # Retrieve KEGG data
     disease_id = retrieve_kegg_disease_id(disease_name)
     if not disease_id:
         logger.warning(f"No KEGG data found for disease: {disease_name}")
         return []
-    
+
     pathways = retrieve_kegg_pathway_by_disease_id(disease_id)
     if not pathways:
         logger.warning(f"No pathways found for disease: {disease_name}")
         return []
-    
+
     kegg_data = retrieve_kegg_pathway_details(pathways)
     if not kegg_data:
         logger.warning(f"No pathway details found for disease: {disease_name}")
         return []
-    
-    genes = [gene['name'].split(",")[0].strip() for pathway in kegg_data for gene in pathway['genes']]
+
+    # genes becomes a list of dicts with symbol + kegg_gene_id
+    genes = []
+    for pathway in kegg_data:
+        for g in pathway["genes"]:
+            genes.append({
+                "symbol": g["name"].split(",")[0].strip(),
+                "kegg_gene_id": g.get("kegg_gene_id")
+            })
+
     logger.info(f"Found {len(genes)} genes to process")
-    
+
     # Process genes with progress tracking
     table_data = []
     total_genes = len(genes)
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-        future_to_gene = {executor.submit(process_gene, gene): gene for gene in genes}
-        
+        future_to_gene = {executor.submit(process_gene, g["symbol"]): g for g in genes}
+
         for i, future in enumerate(concurrent.futures.as_completed(future_to_gene)):
-            gene = future_to_gene[future]
+            g = future_to_gene[future]  # dict: {"symbol": ..., "kegg_gene_id": ...}
             try:
                 result = future.result()
+
+                # Inject KEGG gene id into the result row for ETL use
+                result["kegg_gene_id"] = g.get("kegg_gene_id")
+
                 table_data.append(result)
+
                 if progress_callback:
-                    progress_callback(i + 1, total_genes, gene)
+                    # progress_callback expects a gene name string
+                    progress_callback(i + 1, total_genes, g["symbol"])
+
             except Exception as e:
-                logger.error(f"Exception for gene {gene}: {e}")
-    
+                logger.error(f"Exception for gene {g.get('symbol')}: {e}")
+
     logger.info(f"Completed processing {len(table_data)} genes")
     return table_data
+
 
 def query_kegg(disease_name):
     """Query KEGG for disease information"""

@@ -1,3 +1,5 @@
+from db import db
+from db.models import Disease, Gene
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context
 import os
 import json
@@ -11,6 +13,18 @@ from backend import (
 
 # Initialize Flask app
 app = Flask(__name__)
+
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
+    "DATABASE_URL",
+    "mysql+pymysql://diseasenet_user:diseasenet_pass@127.0.0.1:3307/diseasenet"
+)
+
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
 
 # Ensure the uploads and outputs folder exists
 UPLOAD_FOLDER = 'uploads'
