@@ -1,4 +1,4 @@
-# 🧬 DiseaseNet
+# DiseaseNet
 
 A comprehensive disease-gene-protein-ligand database search tool that integrates data from KEGG, UniProt, and PubChem databases.
 
@@ -8,7 +8,7 @@ A comprehensive disease-gene-protein-ligand database search tool that integrates
 
 ---
 
-## 🎯 Overview
+## Overview
 
 DiseaseNet is a Flask web application that allows researchers to quickly search for disease-associated genes and retrieve comprehensive information including:
 
@@ -20,19 +20,19 @@ DiseaseNet is a Flask web application that allows researchers to quickly search 
 
 ---
 
-## ✨ Features
+## Features
 
-- **🔍 Intelligent Search**: Autocomplete and fuzzy matching for disease names
-- **📊 Comprehensive Data**: Integration of KEGG, UniProt, and PubChem databases
-- **⚡ Real-time Progress**: Live updates during data processing
-- **📋 Interactive Results**: Sortable, filterable table with 100+ genes per disease
-- **📥 Export Options**: Download results as CSV
-- **💡 Smart UI**: Copy cells with one click, highlight on copy
-- **🎨 Modern Design**: Clean interface with responsive layout
+- **Intelligent Search**: Autocomplete and fuzzy matching for disease names
+- **Comprehensive Data**: Integration of KEGG, UniProt, and PubChem databases
+- **Real-time Progress**: Live updates during data processing
+- **Interactive Results**: Sortable, filterable table with 100+ genes per disease
+- **Export Options**: Download results as CSV
+- **Smart UI**: Copy cells with one click, highlight on copy
+- **Modern Design**: Clean interface with responsive layout
 
 ---
 
-## 🚀 Quick Start
+##Quick Start
 
 ### Prerequisites
 
@@ -64,7 +64,7 @@ http://127.0.0.1:5000/
 
 ---
 
-## 📖 Usage
+##Usage
 
 1. **Enter a disease name** (e.g., "Breast cancer", "Diabetes mellitus")
 2. **Select from autocomplete suggestions** or use example buttons
@@ -77,7 +77,7 @@ http://127.0.0.1:5000/
 
 ---
 
-## 🗂️ Project Structure
+##Project Structure
 
 ```
 diseasenet/
@@ -95,7 +95,7 @@ diseasenet/
 
 ---
 
-## 🔬 Data Sources
+##Data Sources
 
 ### KEGG (Kyoto Encyclopedia of Genes and Genomes)
 - Disease-pathway associations
@@ -115,7 +115,7 @@ diseasenet/
 
 ---
 
-## 📊 Output Data
+##Output Data
 
 Each search returns a comprehensive table with:
 
@@ -132,7 +132,7 @@ Each search returns a comprehensive table with:
 
 ---
 
-## 🛠️ Technical Details
+##Technical Details
 
 ### Built With
 
@@ -149,46 +149,7 @@ Each search returns a comprehensive table with:
 - Retry logic with exponential backoff
 - Expected processing time: ~1-2 seconds per gene
 
-### Features Implemented
-
-✅ Disease search with fuzzy matching  
-✅ Real-time autocomplete  
-✅ Animated progress bar  
-✅ Sortable & filterable results table  
-✅ One-click cell copying with visual feedback  
-✅ CSV export  
-✅ Recent searches history  
-✅ Example disease quick access  
-✅ Responsive design  
-✅ Error handling & retry logic  
-
----
-
-## 🖼️ Screenshots
-
-### Home Page
-Clean search interface with autocomplete and recent searches.
-
-### Results Page
-Interactive table with sortable columns and copy functionality.
-
-### Progress Tracking
-Real-time updates during data processing.
-
----
-
-## 📝 Example Searches
-
-Try these diseases to see DiseaseNet in action:
-
-- **Breast cancer** (~104 genes)
-- **Diabetes mellitus** (~87 genes)
-- **Alzheimer disease** (~93 genes)
-- **Atopic dermatitis** (~45 genes)
-
----
-
-## 🤝 Contributing
+##Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
@@ -200,13 +161,13 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ---
 
-## 📄 License
+##License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-## 🙏 Acknowledgments
+##Acknowledgments
 
 - **KEGG** for disease and pathway data
 - **UniProt** for comprehensive protein information
@@ -215,7 +176,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-## 📧 Contact
+##Contact
 
 **Author**: Austin Gilbride, Brigita Medelyte, Revanth Naidu  
 **Institution**: Universitat Pompeu Fabra (UPF)/Universitat de Barcelona  
@@ -223,22 +184,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **Year**: 2024-2025
 
 ---
-
-## 🔮 Future Enhancements
-
-- [ ] 3D protein structure viewer integration
-- [ ] Disease comparison tool
-- [ ] Database caching for faster results
-- [ ] User authentication and saved searches
-- [ ] PDF report generation
-- [ ] Network visualization of gene interactions
-- [ ] Drug information integration
-- [ ] Batch gene lookup
-
----
-
-**⭐ If you find this project useful, please consider giving it a star!**
-
----
-
-*Built with ❤️ for the bioinformatics community*
