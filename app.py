@@ -16,7 +16,7 @@ app = Flask(__name__)
 
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv(
     "DATABASE_URL",
-    "mysql+pymysql://diseasenet_user:diseasenet_pass@127.0.0.1:3307/diseasenet"
+    "sqlite:///diseasenet.db"
 )
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False

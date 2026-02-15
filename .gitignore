@@ -60,3 +60,5 @@ RENAME_FILES.bat
 test_*.py
 *_test.py
 pubchem_*.txt
+*.db
+.env

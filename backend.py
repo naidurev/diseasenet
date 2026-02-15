@@ -5,7 +5,6 @@ import concurrent.futures
 import time
 import logging
 from io import StringIO
-import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -13,16 +12,13 @@ import tempfile
 from fuzzywuzzy import process, fuzz
 from functools import wraps
 
-# Setup logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Retry decorator
 def retry_on_failure(max_retries=3, delay=1):
-    """Decorator to retry API calls on failure"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -45,9 +41,7 @@ def retry_on_failure(max_retries=3, delay=1):
         return wrapper
     return decorator
 
-# Timeout wrapper
 def with_timeout(timeout_seconds=30):
-    """Decorator to add timeout to functions"""
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -60,7 +54,6 @@ def with_timeout(timeout_seconds=30):
     return decorator
 
 def fuzzy_search_kegg_disease(disease_name, limit=5):
-    """Search KEGG for diseases matching the input using fuzzy matching"""
     logger.info(f"Fuzzy searching for disease: {disease_name}")
     base_url = "http://rest.kegg.jp/list/disease"
     try:
@@ -99,7 +92,6 @@ def fuzzy_search_kegg_disease(disease_name, limit=5):
 
 @retry_on_failure(max_retries=3, delay=1)
 def retrieve_kegg_disease_id(disease_name):
-    """Retrieve KEGG disease ID based on the disease name"""
     logger.info(f"Retrieving KEGG disease ID for: {disease_name}")
     base_url = f"http://rest.kegg.jp/find/disease/{disease_name}"
     response = requests.get(base_url, timeout=10)
@@ -114,7 +106,6 @@ def retrieve_kegg_disease_id(disease_name):
 
 @retry_on_failure(max_retries=3, delay=1)
 def retrieve_kegg_pathway_by_disease_id(disease_id):
-    """Retrieve pathways from KEGG based on disease ID"""
     logger.info(f"Retrieving pathways for disease ID: {disease_id}")
     base_url = f"http://rest.kegg.jp/link/pathway/{disease_id}"
     response = requests.get(base_url, timeout=10)
@@ -128,7 +119,6 @@ def retrieve_kegg_pathway_by_disease_id(disease_id):
 
 @retry_on_failure(max_retries=3, delay=1)
 def retrieve_kegg_pathway_details(pathways):
-    """Retrieve detailed information about pathways from KEGG"""
     pathway_details = []
     for pathway in pathways:
         pathway_id = pathway['pathway_id']
@@ -145,7 +135,6 @@ def retrieve_kegg_pathway_details(pathways):
     return pathway_details
 
 def parse_kgml(kgml_data):
-    """Parse KGML for genes and proteins; capture KEGG gene id from entry@name."""
     root = ET.fromstring(kgml_data)
     genes_proteins = []
     for entry in root.findall('entry'):
@@ -158,15 +147,14 @@ def parse_kgml(kgml_data):
             if not gene_label:
                 continue
 
-            # This is the KEGG identifier like "hsa:2099 hsa:xxxx" sometimes space-separated
-            kegg_gene_name = entry.get('name')  # e.g. "hsa:2099"
+            kegg_gene_name = entry.get('name')
             if kegg_gene_name:
                 kegg_gene_id = kegg_gene_name.split()[0].strip()
             else:
                 kegg_gene_id = None
 
             genes_proteins.append({
-                'name': gene_label.split(",")[0].strip(),  # symbol-like label
+                'name': gene_label.split(",")[0].strip(),
                 'kegg_gene_id': kegg_gene_id
             })
     return genes_proteins
@@ -174,7 +162,6 @@ def parse_kgml(kgml_data):
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def query_protein_info_uniprot(uniprot_id):
-    """Query protein name and functional role from UniProt"""
     logger.info(f"Querying UniProt for: {uniprot_id}")
     uniprot_api_url = f"https://rest.uniprot.org/uniprotkb/{uniprot_id}.xml"
     response = requests.get(uniprot_api_url, timeout=10)
@@ -209,7 +196,6 @@ def query_protein_info_uniprot(uniprot_id):
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def query_gene_name_and_id_uniprot(gene_name):
-    """Query UniProt for gene name and ID"""
     logger.info(f"Querying UniProt for gene: {gene_name}")
     uniprot_api_url = f"https://rest.uniprot.org/uniprotkb/search?query={gene_name}+AND+organism_id:9606&format=json"
     response = requests.get(uniprot_api_url, timeout=10)
@@ -224,7 +210,6 @@ def query_gene_name_and_id_uniprot(gene_name):
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def query_receptors_uniprot(gene_name):
-    """Query receptors from UniProt"""
     uniprot_api_url = f"https://rest.uniprot.org/uniprotkb/search?query={gene_name}+AND+organism_id:9606&format=json"
     response = requests.get(uniprot_api_url, timeout=10)
     if response.status_code == 200:
@@ -246,7 +231,6 @@ def query_receptors_uniprot(gene_name):
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def get_gene_id_pubchem(gene_symbol):
-    """Get gene ID from PubChem"""
     time.sleep(0.25)
     logger.info(f"Querying PubChem for gene symbol: {gene_symbol}")
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/gene/genesymbol/{gene_symbol}/summary/JSON"
@@ -265,7 +249,6 @@ def get_gene_id_pubchem(gene_symbol):
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def get_bioactivity_data(gene_id):
-    """Get bioactivity data from PubChem - CORRECTED INDICES"""
     time.sleep(0.25)
     logger.info(f"Querying PubChem bioactivity for gene ID: {gene_id}")
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/gene/geneid/{gene_id}/concise/JSON"
@@ -276,18 +259,12 @@ def get_bioactivity_data(gene_id):
             bioactivity_data = []
             rows = data.get('Table', {}).get('Row', [])
             
-            # Process top 20 rows for better chance of finding active compounds
             for row in rows[:20]:
                 try:
-                    # PubChem API structure:
-                    # [0]=AID, [1]=SID, [2]=CID, [3]=Activity Outcome
-                    # [4]=Target, [5]=Activity Name, [6]=Qualifier, [7]=Activity Value [uM]
-                    
                     activity_outcome = str(row['Cell'][3]).strip()
                     cid = str(row['Cell'][2]).strip()
-                    potency_str = str(row['Cell'][7]).strip()  # CORRECT INDEX: 7 not 5!
+                    potency_str = str(row['Cell'][7]).strip()
                     
-                    # Only include "Active" compounds with valid potency
                     if activity_outcome != "Active":
                         continue
                     
@@ -311,7 +288,6 @@ def get_bioactivity_data(gene_id):
 
 @retry_on_failure(max_retries=2, delay=0.5)
 def get_compound_name(cid):
-    """Get compound name from PubChem"""
     time.sleep(0.25)
     url = f"https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cid}/property/Title/JSON"
     try:
@@ -324,19 +300,15 @@ def get_compound_name(cid):
     return f"Compound_{cid}"
 
 def process_gene(gene_name, progress_callback=None):
-    """Process each gene - main data gathering function"""
     try:
         logger.info(f"Processing gene: {gene_name}")
 
-        # Always initialize these so they exist in all branches
         ligands_struct = []
         ligands = []
 
-        # Query UniProt for receptor and gene ID
         uniprot_gene_name, uniprot_id = query_gene_name_and_id_uniprot(gene_name)
         receptors = query_receptors_uniprot(gene_name)
 
-        # Query PubChem for gene ID and ligands
         gene_id = get_gene_id_pubchem(gene_name)
 
         if gene_id:
@@ -353,14 +325,11 @@ def process_gene(gene_name, progress_callback=None):
                     ligands_struct.append({"cid": cid, "name": name, "potency_um": potency})
             else:
                 ligands = ["No ligand data available"]
-                # ligands_struct stays []
                 logger.warning(f"No bioactivity data found for gene {gene_name} (gene_id: {gene_id})")
         else:
             ligands = ["No gene ID found"]
-            # ligands_struct stays []
             logger.warning(f"No PubChem gene ID found for {gene_name}")
 
-        # Query for protein name, functional role, and PDB IDs
         if uniprot_id != "N/A":
             protein_name, functional_role, pdb_ids = query_protein_info_uniprot(uniprot_id)
         else:
@@ -377,7 +346,7 @@ def process_gene(gene_name, progress_callback=None):
             'Receptors (Interacting)': ', '.join(receptors) if receptors else "No receptor interaction",
             'Functional Role': functional_role,
             'Ligands': '; '.join(ligands) if ligands else "No ligand data available",
-            'ligands_struct': ligands_struct,   # ALWAYS present now
+            'ligands_struct': ligands_struct,
         }
 
         logger.info(f"Successfully processed gene: {gene_name}")
@@ -394,14 +363,228 @@ def process_gene(gene_name, progress_callback=None):
             'Receptors (Interacting)': "Error",
             'Functional Role': "Error",
             'Ligands': "Error",
-            'ligands_struct': [],              # also always present here
+            'ligands_struct': [],
         }
 
-def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
-    """Main function to build the gene/receptor/ligand table"""
-    logger.info(f"Building table for disease: {disease_name}")
+def load_from_database(disease_name):
+    from app import db
+    from db.models import Disease, Gene, DiseaseGene, UniprotProtein, GeneUniprotBridge, Compound, GeneCompoundActivity, UniprotPdb, UniprotInteraction
+    
+    try:
+        disease = Disease.query.filter_by(disease_name=disease_name).first()
+        if not disease:
+            return None
+        
+        logger.info(f"Loading cached data for {disease_name} from database")
+        
+        disease_genes = DiseaseGene.query.filter_by(kegg_disease_id=disease.kegg_disease_id).all()
+        
+        table_data = []
+        for dg in disease_genes:
+            gene = Gene.query.filter_by(ncbi_gene_id=dg.ncbi_gene_id).first()
+            if not gene:
+                continue
+            
+            bridge = GeneUniprotBridge.query.filter_by(ncbi_gene_id=gene.ncbi_gene_id).first()
+            uniprot_id = bridge.uniprot_id if bridge else "N/A"
+            
+            protein_name = "Protein name not available"
+            functional_role = "Functional role not available"
+            pdb_ids = []
+            receptors = []
+            
+            if uniprot_id != "N/A":
+                protein = UniprotProtein.query.filter_by(uniprot_id=uniprot_id).first()
+                if protein:
+                    protein_name = protein.protein_name or "Protein name not available"
+                    functional_role = protein.functional_role or "Functional role not available"
+                
+                pdbs = UniprotPdb.query.filter_by(uniprot_id=uniprot_id).all()
+                pdb_ids = [p.pdb_id for p in pdbs]
+                
+                interactions = UniprotInteraction.query.filter_by(uniprot_id=uniprot_id).all()
+                receptors = [i.interaction_type for i in interactions]
+            
+            activities = GeneCompoundActivity.query.filter_by(ncbi_gene_id=gene.ncbi_gene_id).all()
+            ligands = []
+            ligands_struct = []
+            
+            for activity in activities:
+                compound = Compound.query.filter_by(CID=activity.cid).first()
+                if compound:
+                    compound_name = compound.preferred_name
+                    potency = activity.Ki_concentration
+                    if potency:
+                        ligands.append(f"{compound_name} ({potency} uM)")
+                        ligands_struct.append({"cid": activity.cid, "name": compound_name, "potency_um": float(potency)})
+            
+            result = {
+                'Gene Name': gene.gene_symbol,
+                'Gene ID': gene.ncbi_gene_id,
+                'UniProt ID': uniprot_id,
+                'Protein Name': protein_name,
+                'PDB ID': ', '.join(pdb_ids) if pdb_ids else "No PDB IDs",
+                'Receptors (Interacting)': ', '.join(receptors) if receptors else "No receptor interaction",
+                'Functional Role': functional_role,
+                'Ligands': '; '.join(ligands) if ligands else "No ligand data available",
+                'ligands_struct': ligands_struct,
+                'kegg_gene_id': gene.kegg_gene_id
+            }
+            table_data.append(result)
+        
+        logger.info(f"Loaded {len(table_data)} genes from database cache")
+        return table_data
+        
+    except Exception as e:
+        logger.error(f"Error loading from database: {e}")
+        return None
 
-    # Retrieve KEGG data
+def save_to_database(disease_name, kegg_disease_id, gene_results):
+    from app import db
+    from db.models import (
+        Disease, Gene, DiseaseGene, UniprotProtein,
+        GeneUniprotBridge, Compound, GeneCompoundActivity,
+        UniprotPdb, UniprotInteraction
+    )
+    
+    try:
+        disease = Disease.query.filter_by(kegg_disease_id=kegg_disease_id).first()
+        if not disease:
+            disease = Disease(kegg_disease_id=kegg_disease_id, disease_name=disease_name)
+            db.session.add(disease)
+            db.session.flush()
+        
+        for gene_data in gene_results:
+            gene_id = str(gene_data.get('Gene ID', ''))
+            if not gene_id or gene_id == 'N/A':
+                continue
+            
+            gene = Gene.query.filter_by(ncbi_gene_id=gene_id).first()
+            if not gene:
+                gene = Gene(
+                    ncbi_gene_id=gene_id,
+                    gene_symbol=gene_data.get('Gene Name', '')[:45],
+                    kegg_gene_id=gene_data.get('kegg_gene_id', '')[:45] if gene_data.get('kegg_gene_id') else None
+                )
+                db.session.add(gene)
+                db.session.flush()
+            
+            dg = DiseaseGene.query.filter_by(
+                kegg_disease_id=kegg_disease_id,
+                ncbi_gene_id=gene_id
+            ).first()
+            if not dg:
+                dg = DiseaseGene(
+                    kegg_disease_id=kegg_disease_id,
+                    ncbi_gene_id=gene_id
+                )
+                db.session.add(dg)
+            
+            uniprot_id = gene_data.get('UniProt ID', '')
+            if uniprot_id and uniprot_id != 'N/A':
+                protein = UniprotProtein.query.filter_by(uniprot_id=uniprot_id).first()
+                if not protein:
+                    protein_name = gene_data.get('Protein Name', '')
+                    functional_role = gene_data.get('Functional Role', '')
+                    
+                    protein = UniprotProtein(
+                        uniprot_id=uniprot_id,
+                        protein_name=protein_name[:45] if protein_name else None,
+                        functional_role=functional_role[:45] if functional_role else None
+                    )
+                    db.session.add(protein)
+                    db.session.flush()
+                
+                bridge = GeneUniprotBridge.query.filter_by(
+                    ncbi_gene_id=gene_id,
+                    uniprot_id=uniprot_id
+                ).first()
+                if not bridge:
+                    bridge = GeneUniprotBridge(
+                        ncbi_gene_id=gene_id,
+                        uniprot_id=uniprot_id
+                    )
+                    db.session.add(bridge)
+                
+                pdb_ids = gene_data.get('PDB ID', '')
+                if pdb_ids and pdb_ids not in ['N/A', 'No PDB IDs']:
+                    for pdb_id in pdb_ids.split(', ')[:3]:
+                        pdb_id = pdb_id.strip()
+                        if pdb_id:
+                            existing_pdb = UniprotPdb.query.filter_by(
+                                uniprot_id=uniprot_id,
+                                pdb_id=pdb_id
+                            ).first()
+                            if not existing_pdb:
+                                pdb_entry = UniprotPdb(
+                                    uniprot_id=uniprot_id,
+                                    pdb_id=pdb_id
+                                )
+                                db.session.add(pdb_entry)
+                
+                receptors = gene_data.get('Receptors (Interacting)', '')
+                if receptors and receptors not in ['N/A', 'No receptor interaction']:
+                    for receptor in receptors.split(', ')[:5]:
+                        receptor = receptor.strip()
+                        if receptor:
+                            existing_interaction = UniprotInteraction.query.filter_by(
+                                uniprot_id=uniprot_id,
+                                interaction_type=receptor[:45]
+                            ).first()
+                            if not existing_interaction:
+                                interaction = UniprotInteraction(
+                                    uniprot_id=uniprot_id,
+                                    interaction_type=receptor[:45]
+                                )
+                                db.session.add(interaction)
+            
+            ligands_struct = gene_data.get('ligands_struct', [])
+            for idx, ligand in enumerate(ligands_struct[:10]):
+                cid = str(ligand.get('cid', ''))
+                name = ligand.get('name', '')
+                potency = str(ligand.get('potency_um', ''))
+                
+                if not cid:
+                    continue
+                
+                compound = Compound.query.filter_by(CID=cid[:45]).first()
+                if not compound:
+                    compound = Compound(CID=cid[:45], preferred_name=name[:45])
+                    db.session.add(compound)
+                    db.session.flush()
+                
+                activity_id = f"{gene_id}_{cid[:20]}_{idx}"[:45]
+                existing_activity = GeneCompoundActivity.query.filter_by(
+                    activity_id=activity_id
+                ).first()
+                if not existing_activity:
+                    activity = GeneCompoundActivity(
+                        activity_id=activity_id,
+                        ncbi_gene_id=gene_id,
+                        cid=cid[:45],
+                        Ki_concentration=potency[:45] if potency else None
+                    )
+                    db.session.add(activity)
+        
+        db.session.commit()
+        logger.info(f"Successfully saved data for {disease_name} to database")
+        return True
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error saving to database: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
+    logger.info(f"Building table for disease: {disease_name}")
+    
+    cached_data = load_from_database(disease_name)
+    if cached_data:
+        logger.info(f"Returning {len(cached_data)} cached results for {disease_name}")
+        return cached_data
+
     disease_id = retrieve_kegg_disease_id(disease_name)
     if not disease_id:
         logger.warning(f"No KEGG data found for disease: {disease_name}")
@@ -417,7 +600,6 @@ def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
         logger.warning(f"No pathway details found for disease: {disease_name}")
         return []
 
-    # genes becomes a list of dicts with symbol + kegg_gene_id
     genes = []
     for pathway in kegg_data:
         for g in pathway["genes"]:
@@ -428,7 +610,6 @@ def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
 
     logger.info(f"Found {len(genes)} genes to process")
 
-    # Process genes with progress tracking
     table_data = []
     total_genes = len(genes)
 
@@ -436,28 +617,24 @@ def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
         future_to_gene = {executor.submit(process_gene, g["symbol"]): g for g in genes}
 
         for i, future in enumerate(concurrent.futures.as_completed(future_to_gene)):
-            g = future_to_gene[future]  # dict: {"symbol": ..., "kegg_gene_id": ...}
+            g = future_to_gene[future]
             try:
                 result = future.result()
-
-                # Inject KEGG gene id into the result row for ETL use
                 result["kegg_gene_id"] = g.get("kegg_gene_id")
-
                 table_data.append(result)
 
                 if progress_callback:
-                    # progress_callback expects a gene name string
                     progress_callback(i + 1, total_genes, g["symbol"])
 
             except Exception as e:
                 logger.error(f"Exception for gene {g.get('symbol')}: {e}")
 
     logger.info(f"Completed processing {len(table_data)} genes")
+    save_to_database(disease_name, disease_id, table_data)
     return table_data
 
 
 def query_kegg(disease_name):
-    """Query KEGG for disease information"""
     disease_id = retrieve_kegg_disease_id(disease_name)
     if disease_id:
         pathways = retrieve_kegg_pathway_by_disease_id(disease_id)
