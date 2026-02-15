@@ -24,7 +24,6 @@ wheels/
 *.egg
 
 # Flask
-instance/
 .webassets-cache
 
 # Environment
@@ -52,13 +51,3 @@ Thumbs.db
 *_FIXED*
 *_FINAL*
 *_OLD*
-CLEANUP*.bat
-PREPARE_FOR_GITHUB.bat
-RENAME_FILES.bat
-
-# Test files
-test_*.py
-*_test.py
-pubchem_*.txt
-*.db
-.env
