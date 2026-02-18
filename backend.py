@@ -1,15 +1,9 @@
 import requests
-import pandas as pd
 import xml.etree.ElementTree as ET
 import concurrent.futures
 import time
 import logging
-from io import StringIO
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-import tempfile
-from fuzzywuzzy import process, fuzz
+from rapidfuzz import process, fuzz
 from functools import wraps
 
 logging.basicConfig(
@@ -74,7 +68,7 @@ def fuzzy_search_kegg_disease(disease_name, limit=5):
             matches = process.extract(disease_name, disease_names, scorer=fuzz.token_set_ratio, limit=limit)
             
             suggestions = []
-            for match_name, score in matches:
+            for match_name, score, _ in matches:
                 if score > 60:
                     disease_id = next(d['id'] for d in all_diseases if d['name'] == match_name)
                     suggestions.append({
@@ -137,6 +131,7 @@ def retrieve_kegg_pathway_details(pathways):
 def parse_kgml(kgml_data):
     root = ET.fromstring(kgml_data)
     genes_proteins = []
+    seen = set()
     for entry in root.findall('entry'):
         if entry.get('type') in ('gene', 'protein'):
             graphics = entry.find('graphics')
@@ -147,6 +142,11 @@ def parse_kgml(kgml_data):
             if not gene_label:
                 continue
 
+            gene_symbol = gene_label.split(",")[0].strip()
+            if gene_symbol in seen:
+                continue
+            seen.add(gene_symbol)
+
             kegg_gene_name = entry.get('name')
             if kegg_gene_name:
                 kegg_gene_id = kegg_gene_name.split()[0].strip()
@@ -154,7 +154,7 @@ def parse_kgml(kgml_data):
                 kegg_gene_id = None
 
             genes_proteins.append({
-                'name': gene_label.split(",")[0].strip(),
+                'name': gene_symbol,
                 'kegg_gene_id': kegg_gene_id
             })
     return genes_proteins
@@ -601,14 +601,22 @@ def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
         return []
 
     genes = []
+    seen_symbols = set()
     for pathway in kegg_data:
         for g in pathway["genes"]:
-            genes.append({
-                "symbol": g["name"].split(",")[0].strip(),
-                "kegg_gene_id": g.get("kegg_gene_id")
-            })
+            symbol = g["name"].split(",")[0].strip()
+            if symbol not in seen_symbols:
+                seen_symbols.add(symbol)
+                genes.append({
+                    "symbol": symbol,
+                    "kegg_gene_id": g.get("kegg_gene_id")
+                })
 
-    logger.info(f"Found {len(genes)} genes to process")
+    total_before_dedup = sum(len(pathway["genes"]) for pathway in kegg_data)
+    logger.info(
+        f"Found {total_before_dedup} gene entries across pathways, "
+        f"deduplicated to {len(genes)} unique gene symbols"
+    )
 
     table_data = []
     total_genes = len(genes)

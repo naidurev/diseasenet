@@ -4,6 +4,8 @@ from flask import Flask, render_template, request, jsonify, send_file, Response,
 import os
 import json
 import csv
+import threading
+import queue
 from io import StringIO
 from datetime import datetime
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, DateTime, Text
@@ -36,26 +38,26 @@ with app.app_context():
     db.create_all()
 
 def get_user_db_path(username):
-    
-    return os.path.join('instance', 'users', f'{username}.db')
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(base_dir, 'instance', 'users', f'{username}.db')
 
 def init_user_db(username):
     db_path = get_user_db_path(username)
-    if not os.path.exists(db_path):
-        engine = create_engine(f'sqlite:///{db_path}')
-        metadata = MetaData()
-        
-        user_search = Table('user_search', metadata,
-            Column('id', Integer, primary_key=True),
-            Column('username', String(80), nullable=False),
-            Column('disease_name', String(200), nullable=False),
-            Column('searched_at', DateTime, default=datetime.utcnow)
-        )
-        
-        metadata.create_all(engine)
+    engine = create_engine(f'sqlite:///{db_path}')
+    metadata = MetaData()
+
+    Table('user_search', metadata,
+        Column('id', Integer, primary_key=True),
+        Column('username', String(80), nullable=False),
+        Column('disease_name', String(200), nullable=False),
+        Column('searched_at', DateTime, default=datetime.utcnow)
+    )
+
+    metadata.create_all(engine)
     return db_path
 
 def save_user_search(username, disease_name):
+    init_user_db(username)
     engine = create_engine(f'sqlite:///{get_user_db_path(username)}')
     conn = engine.connect()
     from sqlalchemy import text
@@ -165,6 +167,59 @@ def suggest():
 def get_recent_searches():
     searches = Disease.query.order_by(Disease.kegg_disease_id.desc()).limit(10).all()
     return jsonify([{'name': s.disease_name, 'id': s.kegg_disease_id} for s in searches])
+
+@app.route('/stream')
+def stream():
+    disease_name = request.args.get('disease_name', '').strip()
+    if not disease_name:
+        return jsonify({"error": "No disease name provided"}), 400
+
+    result_queue = queue.Queue()
+    current_user = session.get('user')
+
+    def progress_callback(current, total, gene_symbol):
+        result_queue.put(('progress', current, total, gene_symbol))
+
+    def run_in_background():
+        with app.app_context():
+            table_data = build_gene_receptor_ligand_table(disease_name, progress_callback)
+            if current_user:
+                save_user_search(current_user['username'], disease_name)
+        result_queue.put(('result', table_data))
+        result_queue.put(('done', None))
+
+    t = threading.Thread(target=run_in_background, daemon=True)
+    t.start()
+
+    def generate():
+        while True:
+            item = result_queue.get()
+            event_type = item[0]
+
+            if event_type == 'progress':
+                _, current, total, gene_symbol = item
+                payload = json.dumps({'current': current, 'total': total, 'gene': gene_symbol})
+                yield f"event: progress\ndata: {payload}\n\n"
+
+            elif event_type == 'result':
+                _, table_data = item
+                if not table_data:
+                    suggestions = fuzzy_search_kegg_disease(disease_name)
+                    payload = json.dumps({'error': 'No exact match found', 'suggestions': suggestions})
+                else:
+                    payload = json.dumps(table_data)
+                yield f"event: result\ndata: {payload}\n\n"
+
+            elif event_type == 'done':
+                yield f"event: done\ndata: {{}}\n\n"
+                break
+
+    return Response(
+        stream_with_context(generate()),
+        mimetype='text/event-stream',
+        headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'}
+    )
+
 
 @app.route('/process', methods=['POST'])
 def process():
