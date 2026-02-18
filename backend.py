@@ -463,8 +463,8 @@ def save_to_database(disease_name, kegg_disease_id, gene_results):
             if not gene:
                 gene = Gene(
                     ncbi_gene_id=gene_id,
-                    gene_symbol=gene_data.get('Gene Name', '')[:45],
-                    kegg_gene_id=gene_data.get('kegg_gene_id', '')[:45] if gene_data.get('kegg_gene_id') else None
+                    gene_symbol=gene_data.get('Gene Name', ''),
+                    kegg_gene_id=gene_data.get('kegg_gene_id', '') if gene_data.get('kegg_gene_id') else None
                 )
                 db.session.add(gene)
                 db.session.flush()
@@ -489,8 +489,8 @@ def save_to_database(disease_name, kegg_disease_id, gene_results):
                     
                     protein = UniprotProtein(
                         uniprot_id=uniprot_id,
-                        protein_name=protein_name[:45] if protein_name else None,
-                        functional_role=functional_role[:45] if functional_role else None
+                        protein_name=protein_name if protein_name else None,
+                        functional_role=functional_role if functional_role else None
                     )
                     db.session.add(protein)
                     db.session.flush()
@@ -529,12 +529,12 @@ def save_to_database(disease_name, kegg_disease_id, gene_results):
                         if receptor:
                             existing_interaction = UniprotInteraction.query.filter_by(
                                 uniprot_id=uniprot_id,
-                                interaction_type=receptor[:45]
+                                interaction_type=receptor
                             ).first()
                             if not existing_interaction:
                                 interaction = UniprotInteraction(
                                     uniprot_id=uniprot_id,
-                                    interaction_type=receptor[:45]
+                                    interaction_type=receptor
                                 )
                                 db.session.add(interaction)
             
@@ -547,13 +547,13 @@ def save_to_database(disease_name, kegg_disease_id, gene_results):
                 if not cid:
                     continue
                 
-                compound = Compound.query.filter_by(CID=cid[:45]).first()
+                compound = Compound.query.filter_by(CID=cid).first()
                 if not compound:
-                    compound = Compound(CID=cid[:45], preferred_name=name[:45])
+                    compound = Compound(CID=cid, preferred_name=name)
                     db.session.add(compound)
                     db.session.flush()
                 
-                activity_id = f"{gene_id}_{cid[:20]}_{idx}"[:45]
+                activity_id = f"{gene_id}_{cid[:20]}_{idx}"
                 existing_activity = GeneCompoundActivity.query.filter_by(
                     activity_id=activity_id
                 ).first()
@@ -561,8 +561,8 @@ def save_to_database(disease_name, kegg_disease_id, gene_results):
                     activity = GeneCompoundActivity(
                         activity_id=activity_id,
                         ncbi_gene_id=gene_id,
-                        cid=cid[:45],
-                        Ki_concentration=potency[:45] if potency else None
+                        cid=cid,
+                        Ki_concentration=potency if potency else None
                     )
                     db.session.add(activity)
         

@@ -1,15 +1,15 @@
 from db import db
-from db.models import Disease, Gene, UserSearch, User
+from db.models import Disease, Gene, UserSearch
 from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context, session, redirect, url_for
+from flask_mail import Mail, Message
+from authlib.integrations.flask_client import OAuth
 import os
 import json
 import csv
 from io import StringIO
 from datetime import datetime
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, DateTime, Text
-import bcrypt
+from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, DateTime
 from backend import (
-
     build_gene_receptor_ligand_table,
     fuzzy_search_kegg_disease
 )
@@ -17,11 +17,27 @@ from backend import (
 app = Flask(__name__)
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'instance', 'diseasenet.db')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + app.config['SQLALCHEMY_DATABASE_URI']
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///instance/diseasenet.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('GMAIL_USER')
+app.config['MAIL_PASSWORD'] = os.environ.get('GMAIL_APP_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('GMAIL_USER')
+
 db.init_app(app)
+mail = Mail(app)
+
+oauth = OAuth(app)
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
 
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
@@ -35,19 +51,19 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 with app.app_context():
     db.create_all()
 
-def get_user_db_path(username):
-    
-    return os.path.join('instance', 'users', f'{username}.db')
+def get_user_db_path(email):
+    safe_email = email.replace('@', '_').replace('.', '_')
+    return f'instance/users/{safe_email}.db'
 
-def init_user_db(username):
-    db_path = get_user_db_path(username)
+def init_user_db(email):
+    db_path = get_user_db_path(email)
     if not os.path.exists(db_path):
         engine = create_engine(f'sqlite:///{db_path}')
         metadata = MetaData()
         
         user_search = Table('user_search', metadata,
             Column('id', Integer, primary_key=True),
-            Column('username', String(80), nullable=False),
+            Column('user_email', String(120), nullable=False),
             Column('disease_name', String(200), nullable=False),
             Column('searched_at', DateTime, default=datetime.utcnow)
         )
@@ -55,13 +71,13 @@ def init_user_db(username):
         metadata.create_all(engine)
     return db_path
 
-def save_user_search(username, disease_name):
-    engine = create_engine(f'sqlite:///{get_user_db_path(username)}')
+def save_user_search(email, disease_name):
+    engine = create_engine(f'sqlite:///{get_user_db_path(email)}')
     conn = engine.connect()
     from sqlalchemy import text
     conn.execute(
-        text("INSERT INTO user_search (username, disease_name, searched_at) VALUES (:username, :disease, :time)"),
-        {"username": username, "disease": disease_name, "time": datetime.utcnow()}
+        text("INSERT INTO user_search (user_email, disease_name, searched_at) VALUES (:email, :disease, :time)"),
+        {"email": email, "disease": disease_name, "time": datetime.utcnow()}
     )
     conn.commit()
     conn.close()
@@ -70,60 +86,21 @@ def save_user_search(username, disease_name):
 def home():
     return render_template('index.html', user=session.get('user'))
 
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        if not username or not password:
-            return jsonify({'success': False, 'error': 'Username and password required'}), 400
-        
-        if len(username) < 3:
-            return jsonify({'success': False, 'error': 'Username must be at least 3 characters'}), 400
-        
-        if len(password) < 6:
-            return jsonify({'success': False, 'error': 'Password must be at least 6 characters'}), 400
-        
-        existing_user = User.query.filter_by(username=username).first()
-        if existing_user:
-            return jsonify({'success': False, 'error': 'Username already exists'}), 400
-        
-        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        
-        new_user = User(username=username, password_hash=password_hash)
-        db.session.add(new_user)
-        db.session.commit()
-        
-        init_user_db(username)
-        
-        session['user'] = {'username': username}
-        
-        return jsonify({'success': True})
-    
-    return render_template('auth.html', mode='signup')
+@app.route('/login/google')
+def login_google():
+    redirect_uri = url_for('authorize', _external=True)
+    return google.authorize_redirect(redirect_uri)
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        data = request.get_json()
-        username = data.get('username', '').strip()
-        password = data.get('password', '')
-        
-        if not username or not password:
-            return jsonify({'success': False, 'error': 'Username and password required'}), 400
-        
-        user = User.query.filter_by(username=username).first()
-        
-        if not user or not bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
-            return jsonify({'success': False, 'error': 'Invalid username or password'}), 401
-        
-        session['user'] = {'username': username}
-        
-        return jsonify({'success': True})
-    
-    return render_template('auth.html', mode='login')
+@app.route('/authorize')
+def authorize():
+    token = google.authorize_access_token()
+    user_info = google.parse_id_token(token)
+    session['user'] = {
+        'email': user_info['email'],
+        'name': user_info.get('name', user_info['email'])
+    }
+    init_user_db(user_info['email'])
+    return redirect('/')
 
 @app.route('/logout')
 def logout():
@@ -135,8 +112,8 @@ def history():
     if 'user' not in session:
         return jsonify({'error': 'Not logged in'}), 401
     
-    username = session['user']['username']
-    db_path = get_user_db_path(username)
+    email = session['user']['email']
+    db_path = get_user_db_path(email)
     
     if not os.path.exists(db_path):
         return jsonify([])
@@ -149,6 +126,35 @@ def history():
     conn.close()
     
     return jsonify(searches)
+
+@app.route('/email_results', methods=['POST'])
+def email_results():
+    if 'user' not in session:
+        return jsonify({'error': 'Not logged in'}), 401
+    
+    data = request.json
+    disease_name = data.get('disease_name')
+    table_data = data.get('data')
+    
+    output = StringIO()
+    if table_data:
+        headers = list(table_data[0].keys())
+        writer = csv.DictWriter(output, fieldnames=headers)
+        writer.writeheader()
+        writer.writerows(table_data)
+    
+    msg = Message(
+        subject=f'DiseaseNet Results: {disease_name}',
+        recipients=[session['user']['email']]
+    )
+    msg.body = f'Here are your search results for {disease_name}.\n\nAttached is the complete data in CSV format.'
+    msg.attach(f'{disease_name.replace(" ", "_")}.csv', 'text/csv', output.getvalue())
+    
+    try:
+        mail.send(msg)
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/suggest', methods=['POST'])
 def suggest():
@@ -181,7 +187,7 @@ def process():
         return jsonify({"error": "No exact match found", "suggestions": suggestions}), 404
     
     if 'user' in session:
-        save_user_search(session['user']['username'], disease_name)
+        save_user_search(session['user']['email'], disease_name)
     
     return jsonify(table_data)
 

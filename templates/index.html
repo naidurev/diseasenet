@@ -3,517 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DiseaseNet - Enhanced</title>
-    <link href="https://fonts.googleapis.com/css2?family=Glacial+Indifference&display=swap" rel="stylesheet">
+    <title>DiseaseNet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Montserrat', sans-serif; letter-spacing: 0.5px; }
         
-        body, html {
-            margin: 0;
-            padding: 0;
-            height: 100%;
-            font-family: 'Glacial Indifference', sans-serif;
-            transition: background-color 1s ease-in-out;
-        }
-
-        .shared-background {
-            background-image: url('/static/images/image.png');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-            position: relative;
-            transition: all 0.5s ease-in-out;
-        }
-
-        .shared-background::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.3);
-            z-index: 1;
-        }
-
-        .shared-background > * {
-            z-index: 2;
-        }
-
-        h1 {
-            font-size: 4rem;
-            margin-bottom: 10px;
-        }
-
-        h2 {
-            font-size: 1.2rem;
-            margin-bottom: 20px;
-        }
-
-        .search-container {
-            position: relative;
-            width: 500px;
-            max-width: 90%;
-        }
-
-        .search-bar {
-            border: 2px solid white;
-            padding: 12px 15px;
-            width: 100%;
-            border-radius: 5px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1.1rem;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .search-bar::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .search-bar:focus {
-            background-color: rgba(255, 255, 255, 0.2);
-            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-        }
-
-        /* Autocomplete dropdown */
-        .autocomplete-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background-color: rgba(28, 20, 28, 0.95);
-            border: 2px solid white;
-            border-top: none;
-            border-radius: 0 0 5px 5px;
-            max-height: 300px;
-            overflow-y: auto;
-            display: none;
-            z-index: 1000;
-        }
-
-        .autocomplete-item {
-            padding: 12px 15px;
-            cursor: pointer;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            transition: background-color 0.2s;
-        }
-
-        .autocomplete-item:hover {
-            background-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .autocomplete-item:last-child {
-            border-bottom: none;
-        }
-
-        /* ALL BUTTONS - Consistent styling */
-        .search-btn, .example-btn, .recent-item {
-            padding: 12px 25px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid white;
-            cursor: pointer;
-            font-size: 1rem;
-            border-radius: 5px;
-            transition: all 0.3s;
-            margin: 10px 5px;
-        }
-
-        .search-btn, .example-btn {
-            margin-top: 20px;
-            font-size: 1.1rem;
-        }
-
-        .search-btn:hover, .example-btn:hover, .recent-item:hover {
-            background-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .example-diseases {
-            margin-top: 30px;
-        }
-
-        .example-diseases p {
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-            opacity: 0.9;
-        }
-
-        /* Recent searches */
-        .recent-searches {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 10px;
-            max-width: 500px;
-        }
-
-        .recent-searches h3 {
-            font-size: 1rem;
-            margin-bottom: 15px;
-        }
-
-        .recent-item {
-            display: inline-block;
-            padding: 8px 15px;
-            margin: 5px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        /* Progress bar */
-        .progress-container {
-            width: 80%;
-            max-width: 600px;
-            margin-top: 30px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 30px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border: 2px solid white;
-            border-radius: 15px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #75331e, #a0522d);
-            width: 0%;
-            transition: width 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-
-        .progress-text {
-            margin-top: 15px;
-            font-size: 1rem;
-        }
-
-        .estimated-time {
-            margin-top: 10px;
-            font-size: 0.9rem;
-            opacity: 0.8;
-        }
-
-        /* Results page with background */
-        #results-page {
-            display: none;
-            background-image: url('/static/images/image.png');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            color: white;
-            padding: 50px 20px;
-            position: relative;
-            min-height: 100vh;
-        }
-
-        #results-page::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            z-index: 1;
-        }
-
-        #results-page > * {
-            position: relative;
-            z-index: 2;
-        }
-
-        .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            padding: 12px 25px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid white;
-            cursor: pointer;
-            font-size: 1rem;
-            border-radius: 5px;
-            transition: all 0.3s;
-            z-index: 100;
-            margin: 0;
-        }
-
-        .back-btn:hover {
-            background-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .export-btn {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 25px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid white;
-            cursor: pointer;
-            font-size: 1rem;
-            border-radius: 5px;
-            transition: all 0.3s;
-            z-index: 100;
-            margin: 0;
-        }
-
-        .export-btn:hover {
-            background-color: rgba(255, 255, 255, 0.25);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        .results-header {
-            margin: 60px 0 30px 0;
-            text-align: center;
-        }
-
-        /* Table controls */
-        .table-controls {
-            margin: 20px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .search-filter {
-            padding: 10px 15px;
-            border-radius: 5px;
-            border: 2px solid white;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-        }
-
-        .search-filter::placeholder {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        /* Table styling */
-        .table-wrapper {
-            overflow-x: auto;
-            max-height: 70vh;
-            border: 2px solid white;
-            border-radius: 10px;
-            background-color: rgba(0, 0, 0, 0.3);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            color: white;
-        }
-
-        thead {
-            position: sticky;
-            top: 0;
-            background-color: rgba(42, 31, 42, 0.95);
-            z-index: 10;
-        }
-
-        th {
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 15px;
-            text-align: left;
-            cursor: pointer;
-            user-select: none;
-            position: relative;
-        }
-
-        th:hover {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-
-        th.sortable::after {
-            content: ' ⇅';
-            font-size: 0.8rem;
-            opacity: 0.5;
-        }
-
-        th.sort-asc::after {
-            content: ' ▲';
-            opacity: 1;
-        }
-
-        th.sort-desc::after {
-            content: ' ▼';
-            opacity: 1;
-        }
-
-        td {
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 20px;
-            padding-right: 80px;
-            min-height: 80px;
-            text-align: left;
-            position: relative;
-            transition: background-color 0.2s;
-            vertical-align: top;
-        }
-
-        tbody tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        tbody tr:hover {
-            background-color: rgba(255, 255, 255, 0.15);
-        }
-
-        /* Cell highlighting when copied */
-        td.copied-cell {
-            background-color: rgba(117, 51, 30, 0.6) !important;
-            border: 2px solid #ff9800 !important;
-        }
-
-        /* Copy button that appears on hover */
-        .copy-btn {
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid white;
-            padding: 4px 8px;
-            border-radius: 3px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s, background-color 0.2s;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        td:hover .copy-btn {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .copy-btn:hover {
-            background-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* Suggestions styling */
-        .suggestions-box {
-            margin-top: 30px;
-            padding: 20px;
-            background-color: rgba(255, 255, 255, 0.1);
-            border: 2px solid white;
-            border-radius: 10px;
-            max-width: 600px;
-        }
-
-        .suggestion-item {
-            padding: 12px;
-            margin: 10px 0;
-            background-color: rgba(255, 255, 255, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .suggestion-item:hover {
-            background-color: rgba(255, 255, 255, 0.3);
-            transform: translateX(10px);
-        }
-
-        .suggestion-score {
-            font-size: 0.9rem;
-            opacity: 0.7;
-            margin-top: 5px;
-        }
-
-        /* Loading spinner */
-        .spinner {
-            margin: 20px auto;
-            border: 5px solid rgba(255, 255, 255, 0.2);
-            border-top: 5px solid white;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Copy notification tooltip */
-        .copy-tooltip {
-            position: fixed;
-            background-color: rgba(117, 51, 30, 0.9);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 5px;
-            font-size: 0.9rem;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.3s;
-            z-index: 1000;
-            border: 1px solid white;
-        }
-
-        .copy-tooltip.show {
-            opacity: 1;
-        }
-
-        /* Responsive design */
-        @media screen and (max-width: 768px) {
-            h1 {
-                font-size: 2.5rem;
-            }
-
-            .search-container {
-                width: 90%;
-            }
-
-            .table-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .back-btn, .export-btn {
-                position: relative;
-                top: auto;
-                left: auto;
-                right: auto;
-                margin: 10px;
-            }
-        }
+        .top-nav { position: fixed; top: 0; left: 0; right: 0; background-color: rgba(0,0,0,0.5); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; z-index: 1000; backdrop-filter: blur(10px); }
+        .user-info { color: white; display: flex; align-items: center; gap: 15px; }
+        .login-btn, .logout-btn, .history-btn { padding: 8px 20px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 0.9rem; border-radius: 5px; transition: all 0.3s; text-decoration: none; display: inline-block; }
+        .login-btn:hover, .logout-btn:hover, .history-btn:hover { background-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
+        
+        .shared-background { background-image: url('/static/images/image.png'); background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; position: relative; padding-top: 60px; }
+        .shared-background::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.3); z-index: 1; }
+        .shared-background > * { z-index: 2; }
+        
+        h1 { font-size: 4rem; margin-bottom: 10px; }
+        h2 { font-size: 1.2rem; margin-bottom: 20px; }
+        
+        .search-container { position: relative; width: 500px; max-width: 90%; }
+        .search-bar { border: 2px solid white; padding: 12px 15px; width: 100%; border-radius: 5px; background-color: rgba(255,255,255,0.1); color: white; font-size: 1.1rem; outline: none; }
+        .search-bar::placeholder { color: rgba(255,255,255,0.7); }
+        
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background-color: rgba(28,20,28,0.95); border: 2px solid white; border-top: none; border-radius: 0 0 5px 5px; max-height: 300px; overflow-y: auto; display: none; z-index: 1000; }
+        .autocomplete-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.2); }
+        .autocomplete-item:hover { background-color: rgba(255,255,255,0.2); }
+        
+        .search-btn, .example-btn, .recent-item, .email-btn { padding: 12px 25px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 1rem; border-radius: 5px; transition: all 0.3s; margin: 10px 5px; }
+        .search-btn:hover, .example-btn:hover, .recent-item:hover, .email-btn:hover { background-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
+        
+        .recent-searches { margin-top: 30px; padding: 20px; background-color: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); border-radius: 10px; max-width: 500px; }
+        .progress-bar { width: 100%; height: 30px; background-color: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 15px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #75331e, #a0522d); width: 0%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        
+        #results-page { display: none; background-image: url('/static/images/image.png'); background-size: cover; background-position: center; background-attachment: fixed; color: white; padding: 80px 20px 50px 20px; position: relative; min-height: 100vh; }
+        #results-page::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); z-index: 1; }
+        #results-page > * { position: relative; z-index: 2; }
+        
+        .action-btn { padding: 12px 25px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 1rem; border-radius: 5px; transition: all 0.3s; margin: 0 5px; }
+        .button-container-left { position: fixed !important; top: 70px !important; left: 20px !important; z-index: 100; display: flex; gap: 10px; }
+        .button-container-right { position: fixed !important; top: 70px !important; right: 20px !important; left: auto !important; z-index: 100; }
+        
+        #history-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); z-index: 2000; padding: 50px; overflow-y: auto; }
+        .history-content { max-width: 800px; margin: 0 auto; background-color: rgba(28,20,28,0.95); border: 2px solid white; border-radius: 10px; padding: 30px; color: white; }
+        .close-modal { float: right; font-size: 2rem; cursor: pointer; color: white; border: none; background: none; }
+        .history-item { padding: 15px; margin: 10px 0; background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; cursor: pointer; transition: all 0.3s; }
+        .history-item:hover { background-color: rgba(255,255,255,0.2); transform: translateX(10px); }
+        
+        .table-wrapper { overflow-x: auto; max-height: 70vh; border: 2px solid white; border-radius: 10px; background-color: rgba(0,0,0,0.3); }
+        table { width: 100%; border-collapse: collapse; color: white; }
+        thead { position: sticky; top: 0; background-color: rgba(42,31,42,0.95); z-index: 10; }
+        th { border: 1px solid rgba(255,255,255,0.3); padding: 15px; text-align: left; cursor: pointer; user-select: none; }
+        th:hover { background-color: rgba(255,255,255,0.1); }
+        th::after { content: ' ⇅'; font-size: 0.8rem; opacity: 0.5; }
+        th.sort-asc::after { content: ' ▲'; opacity: 1; }
+        th.sort-desc::after { content: ' ▼'; opacity: 1; }
+        td { border: 1px solid rgba(255,255,255,0.2); padding: 20px; position: relative; text-align: justify; vertical-align: top; word-wrap: break-word; }
+        .copy-btn { position: absolute; bottom: 5px; right: 5px; background-color: rgba(255,255,255,0.1); color: white; border: 1px solid white; padding: 4px 8px; border-radius: 3px; font-size: 0.75rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
+        td:hover .copy-btn { opacity: 1; }
+        .ligand-item { display: block; margin-bottom: 8px; }
+        .ligand-potency { font-weight: bold; color: white; }
+        .receptor-item { display: block; margin-bottom: 6px; padding-left: 15px; text-indent: -15px; }
+        .receptor-item::before { content: "• "; color: rgba(255,255,255,0.7); font-weight: bold; }
+        .cell-copied { background-color: rgba(76, 175, 80, 0.3) !important; transition: background-color 0.3s; }
+        .toast { position: fixed; bottom: 30px; right: 30px; background-color: rgba(76, 175, 80, 0.95); color: white; padding: 15px 25px; border-radius: 5px; font-weight: bold; z-index: 10000; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .spinner { margin: 20px auto; border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid white; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
-    <!-- Copy tooltip -->
-    <div id="copy-tooltip" class="copy-tooltip">Copied to clipboard!</div>
+    <div class="top-nav">
+        <div></div>
+        <div class="user-info">
+            {% if user %}
+                <span>{{ user.username }}</span>
+                <button class="history-btn" onclick="showHistory()">History</button>
+                <a href="/logout" class="logout-btn">Logout</a>
+            {% else %}
+                <a href="/login" class="login-btn">Login</a>
+                <a href="/signup" class="login-btn">Sign Up</a>
+            {% endif %}
+        </div>
+    </div>
 
-    <!-- Home Page -->
+    <div id="history-modal">
+        <div class="history-content">
+            <button class="close-modal" onclick="closeHistory()">&times;</button>
+            <h2>Search History</h2>
+            <div id="history-list"></div>
+        </div>
+    </div>
+
     <div id="first-page" class="shared-background">
         <h1>DiseaseNet</h1>
         <h2>Access Comprehensive Disease Information with a Single Search</h2>
@@ -525,7 +106,7 @@
         
         <button class="search-btn" onclick="submitSearch()">Search</button>
         
-        <div class="example-diseases">
+        <div class="example-diseases" style="margin-top:30px;">
             <p>Try searching for:</p>
             <button class="example-btn" onclick="searchExample('Diabetes mellitus')">Diabetes</button>
             <button class="example-btn" onclick="searchExample('Alzheimer disease')">Alzheimer's</button>
@@ -539,48 +120,42 @@
         </div>
     </div>
 
-    <!-- Retrieving Info Section -->
     <div id="retrieving-info" class="shared-background" style="display: none;">
-        <h2 id="status-message">Retrieving information...</h2>
+        <h2>Retrieving information...</h2>
         <div class="spinner"></div>
-        
-        <div class="progress-container">
+        <div style="width:80%; max-width:600px; margin-top:30px;">
             <div class="progress-bar">
                 <div id="progress-fill" class="progress-fill">0%</div>
             </div>
-            <div id="progress-text" class="progress-text">Initializing...</div>
-            <div id="estimated-time" class="estimated-time">Estimated time: 30-60 seconds</div>
+            <div id="progress-text" style="margin-top:15px; color:white;">Initializing...</div>
         </div>
     </div>
 
-    <!-- Results Section -->
     <div id="results-page">
-        <button class="back-btn" onclick="goBackToHome()">← Back to Search</button>
-        <button class="export-btn" onclick="exportToCSV()">Export CSV</button>
+        <div class="button-container-left"><button class="action-btn" onclick="goBackToHome()">← Back</button><button class="action-btn" onclick="exportToCSV()">Export CSV</button></div>
         
-        <div class="results-header">
+        
+        <div style="margin-top:20px; text-align:center;">
             <h2>Results for: <span id="disease-name-result"></span></h2>
         </div>
         
-        <div class="table-controls">
-            <input type="text" id="table-search" class="search-filter" placeholder="Filter by gene name or receptor..." onkeyup="filterTable()">
-            <div>
-                <span id="result-count" style="opacity: 0.8;"></span>
-            </div>
+        <div style="margin:20px 0;">
+            <input type="text" id="table-search" placeholder="Filter results..." onkeyup="filterTable()" 
+                   style="padding:10px; border-radius:5px; border:2px solid white; background-color:rgba(255,255,255,0.1); color:white; width:300px;">
         </div>
         
         <div class="table-wrapper">
             <table id="results-table">
                 <thead>
                     <tr>
-                        <th class="sortable" onclick="sortTable(0)">Gene Name</th>
-                        <th class="sortable" onclick="sortTable(1)">Gene ID</th>
-                        <th class="sortable" onclick="sortTable(2)">UniProt ID</th>
-                        <th class="sortable" onclick="sortTable(3)">Protein Name</th>
-                        <th class="sortable" onclick="sortTable(4)">Receptors (Interacting)</th>
-                        <th class="sortable" onclick="sortTable(5)">Functional Role</th>
-                        <th class="sortable" onclick="sortTable(6)">PDB ID</th>
-                        <th class="sortable" onclick="sortTable(7)">Ligands</th>
+                        <th onclick="sortTable(0)">Gene Name</th>
+                        <th onclick="sortTable(1)">Gene ID</th>
+                        <th onclick="sortTable(2)">UniProt ID</th>
+                        <th onclick="sortTable(3)">Protein Name</th>
+                        <th onclick="sortTable(4)">Receptors (Interacting)</th>
+                        <th onclick="sortTable(5)">Functional Role</th>
+                        <th onclick="sortTable(6)">PDB ID</th>
+                        <th onclick="sortTable(7)">Ligands</th>
                     </tr>
                 </thead>
                 <tbody id="results-table-body"></tbody>
@@ -590,332 +165,172 @@
 
     <script>
         let currentData = [];
+        let simulatedProgress = 0;
+        let progressInterval = null;
         let sortColumn = -1;
         let sortAscending = true;
-        let eventSource = null;
-        let currentCopiedCell = null;
 
-        // Load recent searches on page load
         window.onload = function() {
             loadRecentSearches();
-            
-            // Add input event for autocomplete
             document.getElementById('disease_name').addEventListener('input', debounce(autocomplete, 300));
-            
-            // Add enter key support
             document.getElementById('disease_name').addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    submitSearch();
-                }
+                if (e.key === 'Enter') submitSearch();
             });
         };
 
         function debounce(func, wait) {
             let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
+            return function(...args) {
                 clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
+                timeout = setTimeout(() => func(...args), wait);
             };
         }
 
         function autocomplete() {
             const input = document.getElementById('disease_name').value;
             const dropdown = document.getElementById('autocomplete-dropdown');
-            
-            if (input.length < 2) {
-                dropdown.style.display = 'none';
-                return;
-            }
-            
+            if (input.length < 2) { dropdown.style.display = 'none'; return; }
             fetch('/suggest', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({disease_name: input})
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(suggestions => {
                 if (suggestions.length > 0) {
                     dropdown.innerHTML = '';
-                    suggestions.slice(0, 5).forEach(suggestion => {
+                    suggestions.slice(0, 5).forEach(s => {
                         const item = document.createElement('div');
                         item.className = 'autocomplete-item';
-                        item.innerHTML = `<div>${suggestion.name}</div><div style="font-size: 0.8rem; opacity: 0.7;">Match: ${suggestion.score}%</div>`;
+                        item.innerHTML = `${s.name} <span style="opacity:0.7">(${s.score}%)</span>`;
                         item.onclick = () => {
-                            document.getElementById('disease_name').value = suggestion.name;
+                            document.getElementById('disease_name').value = s.name;
                             dropdown.style.display = 'none';
                             submitSearch();
                         };
                         dropdown.appendChild(item);
                     });
                     dropdown.style.display = 'block';
-                } else {
-                    dropdown.style.display = 'none';
                 }
-            })
-            .catch(error => {
-                console.error('Autocomplete error:', error);
-                dropdown.style.display = 'none';
             });
         }
 
-        // Close autocomplete when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search-container')) {
-                document.getElementById('autocomplete-dropdown').style.display = 'none';
-            }
-        });
-
         function loadRecentSearches() {
             fetch('/recent_searches')
-            .then(response => response.json())
+            .then(r => r.json())
             .then(searches => {
                 if (searches.length > 0) {
                     const container = document.getElementById('recent-items');
-                    const recentDiv = document.getElementById('recent-searches');
                     container.innerHTML = '';
-                    searches.forEach(search => {
+                    searches.forEach(s => {
                         const item = document.createElement('span');
                         item.className = 'recent-item';
-                        item.textContent = search;
+                        item.textContent = s.name;
                         item.onclick = () => {
-                            document.getElementById('disease_name').value = search;
+                            document.getElementById('disease_name').value = s.name;
                             submitSearch();
                         };
                         container.appendChild(item);
                     });
-                    recentDiv.style.display = 'block';
+                    document.getElementById('recent-searches').style.display = 'block';
                 }
-            })
-            .catch(error => console.error('Error loading recent searches:', error));
+            });
         }
 
-        function searchExample(diseaseName) {
-            document.getElementById('disease_name').value = diseaseName;
+        function searchExample(name) {
+            document.getElementById('disease_name').value = name;
             submitSearch();
+        }
+
+        function formatFunctionalRole(roleText) {
+            if (!roleText) return roleText;
+            return roleText.replace(/(PubMed:[0-9]+)/g, "$1<br><br>");
+        }
+
+        function formatReceptors(receptorsText) {
+            if (!receptorsText || receptorsText === "No receptor data available") return receptorsText;
+            const receptors = receptorsText.split(",").map(r => r.trim()).filter(r => r);
+            return receptors.map(receptor => `<span class="receptor-item">${receptor}</span>`).join("");
+        }
+
+        function formatLigands(ligandsText) {
+            if (!ligandsText || ligandsText === 'No ligand data available') return ligandsText;
+            
+            const ligands = ligandsText.split(';').map(l => l.trim()).filter(l => l);
+            return ligands.map(ligand => {
+                const match = ligand.match(/^(.+?)\s*\(([^)]+)\)$/);
+                if (match) {
+                    const name = match[1].trim();
+                    const potency = match[2].trim();
+                    return `<span class="ligand-item">${name} <span class="ligand-potency">(${potency})</span></span>`;
+                }
+                return `<span class="ligand-item">${ligand}</span>`;
+            }).join('');
         }
 
         function submitSearch() {
             const diseaseName = document.getElementById('disease_name').value.trim();
             if (!diseaseName) return;
-            
-            // Hide autocomplete
             document.getElementById('autocomplete-dropdown').style.display = 'none';
-            
-            // Transition to loading page
             document.getElementById('first-page').style.display = 'none';
             document.getElementById('retrieving-info').style.display = 'flex';
-            
-            // Reset progress
             simulatedProgress = 0;
-            document.getElementById('progress-fill').style.width = '0%';
-            document.getElementById('progress-fill').textContent = '0%';
-            document.getElementById('progress-text').textContent = 'Initializing...';
-            
-            fetchResults(diseaseName);
-        }
-
-        let progressInterval = null;
-
-        function fetchResults(diseaseName) {
-            // Start progress polling
             progressInterval = setInterval(updateProgress, 500);
-            
             fetch('/process', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({disease_name: diseaseName})
             })
-            .then(response => {
-                if (progressInterval) clearInterval(progressInterval);
-                if (response.ok) {
-                    return response.json();
-                } else if (response.status === 404) {
-                    return response.json().then(data => {
-                        throw {notFound: true, suggestions: data.suggestions};
-                    });
-                } else {
-                    throw new Error('Failed to fetch data');
-                }
+            .then(r => {
+                clearInterval(progressInterval);
+                return r.json();
             })
             .then(data => {
-                if (progressInterval) clearInterval(progressInterval);
                 displayResults(diseaseName, data);
             })
-            .catch(error => {
-                if (progressInterval) clearInterval(progressInterval);
-                if (error.notFound && error.suggestions) {
-                    displaySuggestions(diseaseName, error.suggestions);
-                } else {
-                    console.error('Error:', error);
-                    alert('Failed to fetch data. Please try again.');
-                    goBackToHome();
-                }
+            .catch(err => {
+                clearInterval(progressInterval);
+                alert('Error fetching data');
+                goBackToHome();
             });
         }
 
-        let simulatedProgress = 0;
         function updateProgress() {
-            // Simulate progress (since we can't get real-time updates easily)
             if (simulatedProgress < 90) {
                 simulatedProgress += Math.random() * 3;
-                const progressFill = document.getElementById('progress-fill');
-                const progressText = document.getElementById('progress-text');
-                
-                progressFill.style.width = simulatedProgress + '%';
-                progressFill.textContent = Math.floor(simulatedProgress) + '%';
-                
-                if (simulatedProgress < 30) {
-                    progressText.textContent = 'Fetching disease information...';
-                } else if (simulatedProgress < 60) {
-                    progressText.textContent = 'Processing genes...';
-                } else {
-                    progressText.textContent = 'Retrieving ligand data...';
-                }
+                document.getElementById('progress-fill').style.width = simulatedProgress + '%';
+                document.getElementById('progress-fill').textContent = Math.floor(simulatedProgress) + '%';
             }
-        }
-
-        function displaySuggestions(searchedName, suggestions) {
-            document.getElementById('retrieving-info').style.display = 'none';
-            document.getElementById('first-page').style.display = 'flex';
-            
-            const oldSuggestions = document.getElementById('suggestions-container');
-            if (oldSuggestions) {
-                oldSuggestions.remove();
-            }
-            
-            const suggestionsBox = document.createElement('div');
-            suggestionsBox.id = 'suggestions-container';
-            suggestionsBox.className = 'suggestions-box';
-            suggestionsBox.innerHTML = '<h3>No exact match found. Did you mean:</h3>';
-            
-            suggestions.forEach(suggestion => {
-                const item = document.createElement('div');
-                item.className = 'suggestion-item';
-                item.innerHTML = `
-                    <div style="font-weight: bold;">${suggestion.name}</div>
-                    <div class="suggestion-score">Match: ${suggestion.score}%</div>
-                `;
-                item.onclick = () => {
-                    document.getElementById('disease_name').value = suggestion.name;
-                    suggestionsBox.remove();
-                    submitSearch();
-                };
-                suggestionsBox.appendChild(item);
-            });
-            
-            document.getElementById('first-page').appendChild(suggestionsBox);
         }
 
         function displayResults(diseaseName, data) {
             document.getElementById('retrieving-info').style.display = 'none';
             document.getElementById('results-page').style.display = 'block';
-            
             currentData = data;
-            
             document.getElementById('disease-name-result').textContent = diseaseName;
-            const tableBody = document.getElementById('results-table-body');
-            tableBody.innerHTML = '';
-            
-            if (Array.isArray(data) && data.length > 0) {
-                data.forEach(row => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><span class="cell-content">${row['Gene Name']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['Gene ID']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['UniProt ID']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['Protein Name']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['Receptors (Interacting)']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['Functional Role']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['PDB ID']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                        <td><span class="cell-content">${row['Ligands']}</span><button class="copy-btn" onclick="copyToClipboard(this, event)">Copy</button></td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-                updateResultCount(data.length, data.length);
-            } else {
-                tableBody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No data found</td></tr>';
-                updateResultCount(0, 0);
-            }
-            
-            loadRecentSearches();
-        }
-
-        function copyToClipboard(button, event) {
-            event.stopPropagation();
-            const cell = button.parentElement;
-            const text = cell.querySelector('.cell-content').textContent;
-            
-            navigator.clipboard.writeText(text).then(() => {
-                // Remove highlight from previously copied cell
-                if (currentCopiedCell) {
-                    currentCopiedCell.classList.remove('copied-cell');
-                }
-                
-                // Highlight current cell
-                cell.classList.add('copied-cell');
-                currentCopiedCell = cell;
-                
-                // Show tooltip
-                showCopyTooltip(event.clientX, event.clientY);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
+            const tbody = document.getElementById('results-table-body');
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row['Gene Name']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${row['Gene ID']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${row['UniProt ID']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${row['Protein Name']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${formatReceptors(row['Receptors (Interacting)'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${formatFunctionalRole(row['Functional Role'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${row['PDB ID']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${formatLigands(row['Ligands'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                `;
+                tbody.appendChild(tr);
             });
-        }
-
-        function showCopyTooltip(x, y) {
-            const tooltip = document.getElementById('copy-tooltip');
-            tooltip.style.left = x + 'px';
-            tooltip.style.top = (y - 40) + 'px';
-            tooltip.classList.add('show');
-            setTimeout(() => tooltip.classList.remove('show'), 1500);
-        }
-
-        function filterTable() {
-            const input = document.getElementById('table-search').value.toLowerCase();
-            const tableBody = document.getElementById('results-table-body');
-            const rows = tableBody.getElementsByTagName('tr');
-            let visibleCount = 0;
-            
-            for (let i = 0; i < rows.length; i++) {
-                const cells = rows[i].getElementsByTagName('td');
-                let found = false;
-                
-                for (let j = 0; j < cells.length; j++) {
-                    const cellText = cells[j].textContent.toLowerCase();
-                    if (cellText.includes(input)) {
-                        found = true;
-                        break;
-                    }
-                }
-                
-                if (found) {
-                    rows[i].style.display = '';
-                    visibleCount++;
-                } else {
-                    rows[i].style.display = 'none';
-                }
-            }
-            
-            updateResultCount(visibleCount, currentData.length);
-        }
-
-        function updateResultCount(visible, total) {
-            const countElem = document.getElementById('result-count');
-            if (visible === total) {
-                countElem.textContent = `Showing ${total} result${total !== 1 ? 's' : ''}`;
-            } else {
-                countElem.textContent = `Showing ${visible} of ${total} results`;
-            }
+            loadRecentSearches();
         }
 
         function sortTable(columnIndex) {
             const table = document.getElementById('results-table');
             const tbody = table.querySelector('tbody');
-            const rows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
             
             if (sortColumn === columnIndex) {
                 sortAscending = !sortAscending;
@@ -925,8 +340,8 @@
             }
             
             rows.sort((a, b) => {
-                const aValue = a.cells[columnIndex].textContent.trim();
-                const bValue = b.cells[columnIndex].textContent.trim();
+                const aValue = a.cells[columnIndex].textContent.replace('Copy', '').trim();
+                const bValue = b.cells[columnIndex].textContent.replace('Copy', '').trim();
                 
                 const aNum = parseFloat(aValue);
                 const bNum = parseFloat(bValue);
@@ -943,7 +358,6 @@
             
             rows.forEach(row => tbody.appendChild(row));
             
-            // Update sort indicators
             const headers = table.querySelectorAll('th');
             headers.forEach((header, index) => {
                 header.classList.remove('sort-asc', 'sort-desc');
@@ -953,56 +367,86 @@
             });
         }
 
+        function copy(btn) {
+            const cell = btn.parentElement;
+            const text = cell.textContent.replace("Copy", "").trim();
+            navigator.clipboard.writeText(text);
+            
+            document.querySelectorAll(".cell-copied").forEach(c => c.classList.remove("cell-copied"));
+            cell.classList.add("cell-copied");
+            
+            const toast = document.createElement("div");
+            toast.className = "toast";
+            toast.textContent = "Copied to clipboard!";
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                cell.classList.remove("cell-copied");
+                toast.remove();
+            }, 2000);
+        }
+
+        function filterTable() {
+            const input = document.getElementById('table-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#results-table-body tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
         function exportToCSV() {
             const diseaseName = document.getElementById('disease-name-result').textContent;
-            
             fetch('/export_csv', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    data: currentData,
-                    disease_name: diseaseName
-                })
+                body: JSON.stringify({data: currentData, disease_name: diseaseName})
             })
-            .then(response => response.blob())
+            .then(r => r.blob())
             .then(blob => {
-                const url = window.URL.createObjectURL(blob);
+                const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${diseaseName.replace(/\s+/g, '_')}_results.csv`;
-                document.body.appendChild(a);
+                a.download = `${diseaseName}.csv`;
                 a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            })
-            .catch(error => {
-                console.error('Export error:', error);
-                alert('Failed to export CSV');
             });
+        }
+
+        
+
+        function showHistory() {
+            fetch('/history')
+            .then(r => r.json())
+            .then(searches => {
+                const list = document.getElementById('history-list');
+                list.innerHTML = '';
+                if (searches.length === 0) {
+                    list.innerHTML = '<p>No search history yet</p>';
+                } else {
+                    searches.forEach(s => {
+                        const item = document.createElement('div');
+                        item.className = 'history-item';
+                        item.innerHTML = `<strong>${s.disease}</strong><br><small>${new Date(s.date).toLocaleString()}</small>`;
+                        item.onclick = () => {
+                            document.getElementById('disease_name').value = s.disease;
+                            closeHistory();
+                            submitSearch();
+                        };
+                        list.appendChild(item);
+                    });
+                }
+                document.getElementById('history-modal').style.display = 'block';
+            });
+        }
+
+        function closeHistory() {
+            document.getElementById('history-modal').style.display = 'none';
         }
 
         function goBackToHome() {
             document.getElementById('results-page').style.display = 'none';
             document.getElementById('first-page').style.display = 'flex';
-            document.getElementById('disease_name').value = '';
-            
-            const oldSuggestions = document.getElementById('suggestions-container');
-            if (oldSuggestions) {
-                oldSuggestions.remove();
-            }
-            
-            if (eventSource) {
-                eventSource.close();
-                eventSource = null;
-            }
-            
-            if (progressInterval) {
-                clearInterval(progressInterval);
-                progressInterval = null;
-            }
-            
-            simulatedProgress = 0;
-            currentCopiedCell = null;
+            clearInterval(progressInterval);
         }
     </script>
 </body>
