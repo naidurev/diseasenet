@@ -47,41 +47,52 @@ def with_timeout(timeout_seconds=30):
         return wrapper
     return decorator
 
-def fuzzy_search_kegg_disease(disease_name, limit=5):
-    logger.info(f"Fuzzy searching for disease: {disease_name}")
-    base_url = "http://rest.kegg.jp/list/disease"
+_kegg_disease_list_cache = None
+
+def _get_kegg_disease_list():
+    global _kegg_disease_list_cache
+    if _kegg_disease_list_cache is not None:
+        return _kegg_disease_list_cache
     try:
-        response = requests.get(base_url, timeout=10)
+        response = requests.get("http://rest.kegg.jp/list/disease", timeout=10)
         if response.status_code == 200:
-            all_diseases = []
+            diseases = []
             for line in response.text.strip().split("\n"):
                 parts = line.split("\t")
                 if len(parts) >= 2:
-                    disease_id = parts[0]
-                    disease_desc = parts[1]
-                    all_diseases.append({
-                        'id': disease_id,
-                        'name': disease_desc
-                    })
-            
-            disease_names = [d['name'] for d in all_diseases]
-            matches = process.extract(disease_name, disease_names, scorer=fuzz.token_set_ratio, limit=limit)
-            
-            suggestions = []
-            for match_name, score, _ in matches:
-                if score > 60:
-                    disease_id = next(d['id'] for d in all_diseases if d['name'] == match_name)
-                    suggestions.append({
-                        'name': match_name,
-                        'id': disease_id,
-                        'score': score
-                    })
-            
-            logger.info(f"Found {len(suggestions)} suggestions for '{disease_name}'")
-            return suggestions
+                    diseases.append({'id': parts[0], 'name': parts[1]})
+            _kegg_disease_list_cache = diseases
+            return diseases
+    except Exception as e:
+        logger.error(f"Error fetching KEGG disease list: {e}")
+    return []
+
+def fuzzy_search_kegg_disease(disease_name, limit=5):
+    logger.info(f"Fuzzy searching for disease: {disease_name}")
+    try:
+        all_diseases = _get_kegg_disease_list()
+        if not all_diseases:
+            return []
+
+        disease_names = [d['name'] for d in all_diseases]
+        query_normalized = disease_name.lower().strip()
+        disease_names_normalized = [n.lower() for n in disease_names]
+
+        # WRatio handles character-level typos (dabetes→diabetes) as well as word reordering
+        matches = process.extract(query_normalized, disease_names_normalized, scorer=fuzz.WRatio, limit=limit)
+
+        suggestions = []
+        for match_name_lower, score, idx in matches:
+            suggestions.append({
+                'name': disease_names[idx],
+                'id': all_diseases[idx]['id'],
+                'score': score
+            })
+
+        logger.info(f"Found {len(suggestions)} suggestions for '{disease_name}'")
+        return suggestions
     except Exception as e:
         logger.error(f"Error in fuzzy search: {e}")
-    
     return []
 
 @retry_on_failure(max_retries=3, delay=1)
@@ -577,7 +588,7 @@ def save_to_database(disease_name, kegg_disease_id, gene_results):
         traceback.print_exc()
         return False
 
-def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
+def build_gene_receptor_ligand_table(disease_name, progress_callback=None, disease_id=None):
     logger.info(f"Building table for disease: {disease_name}")
     
     cached_data = load_from_database(disease_name)
@@ -585,15 +596,16 @@ def build_gene_receptor_ligand_table(disease_name, progress_callback=None):
         logger.info(f"Returning {len(cached_data)} cached results for {disease_name}")
         return cached_data
 
-    disease_id = retrieve_kegg_disease_id(disease_name)
+    if not disease_id:
+        disease_id = retrieve_kegg_disease_id(disease_name)
     if not disease_id:
         logger.warning(f"No KEGG data found for disease: {disease_name}")
-        return []
+        return {'_error': 'no_match'}
 
     pathways = retrieve_kegg_pathway_by_disease_id(disease_id)
     if not pathways:
         logger.warning(f"No pathways found for disease: {disease_name}")
-        return []
+        return {'_error': 'no_pathways'}
 
     kegg_data = retrieve_kegg_pathway_details(pathways)
     if not kegg_data:

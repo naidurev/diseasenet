@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if mode == 'login' %}Login{% else %}Sign Up{% endif %} - DiseaseNet</title>
+    <link rel="icon" type="image/png" href="/static/images/DiseaseNet_logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
@@ -125,6 +126,10 @@
     </style>
 </head>
 <body>
+    <div style="position: fixed; top: 20px; left: 20px; z-index: 100;">
+        <button onclick="history.back()" style="padding: 12px 25px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 1rem; border-radius: 5px; transition: all 0.3s; font-family: 'Montserrat', sans-serif;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.25)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.backgroundColor='rgba(255,255,255,0.1)'; this.style.transform='translateY(0)';">← Back</button>
+    </div>
+
     <div class="container">
         <div class="auth-box">
             <h1>{% if mode == 'login' %}Login{% else %}Sign Up{% endif %}</h1>

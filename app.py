@@ -152,6 +152,84 @@ def history():
     
     return jsonify(searches)
 
+_kegg_diseases_cache = None
+
+@app.route('/diseases/clear', methods=['GET'])
+def clear_diseases_cache():
+    global _kegg_diseases_cache
+    _kegg_diseases_cache = None
+    return jsonify({'cleared': True})
+
+@app.route('/diseases/debug', methods=['GET'])
+def debug_diseases():
+    import requests as req
+    results = {}
+    try:
+        r1 = req.get('http://rest.kegg.jp/list/disease', timeout=15)
+        results['list_status'] = r1.status_code
+        results['list_sample'] = r1.text[:300] if r1.status_code == 200 else ''
+
+        r2 = req.get('http://rest.kegg.jp/link/disease/pathway', timeout=15)
+        results['link_dp_status'] = r2.status_code
+        results['link_dp_sample'] = r2.text[:300] if r2.status_code == 200 else ''
+
+        r3 = req.get('http://rest.kegg.jp/link/pathway/disease', timeout=15)
+        results['link_pd_status'] = r3.status_code
+        results['link_pd_sample'] = r3.text[:300] if r3.status_code == 200 else ''
+    except Exception as e:
+        results['error'] = str(e)
+    return jsonify(results)
+
+@app.route('/diseases', methods=['GET'])
+def get_diseases():
+    global _kegg_diseases_cache
+    if _kegg_diseases_cache is not None:
+        return jsonify(_kegg_diseases_cache)
+    try:
+        import requests as req
+
+        # Get all diseases with names
+        all_resp = req.get('http://rest.kegg.jp/list/disease', timeout=15)
+        if all_resp.status_code != 200:
+            return jsonify([])
+
+        all_diseases = {}
+        for line in all_resp.text.strip().split('\n'):
+            parts = line.split('\t')
+            if len(parts) >= 2:
+                all_diseases[parts[0]] = parts[1]
+
+        # Get diseases that have hsa pathway links
+        # link_pd format: "ds:H00021\tpath:hsa05211"
+        diseases_with_pathways = set()
+        link_resp = req.get('http://rest.kegg.jp/link/pathway/disease', timeout=15)
+        if link_resp.status_code == 200 and link_resp.text.strip():
+            for line in link_resp.text.strip().split('\n'):
+                parts = line.split('\t')
+                if len(parts) == 2:
+                    disease_col = parts[0].strip()
+                    pathway_col = parts[1].strip()
+                    if 'hsa' in pathway_col and disease_col.startswith('ds:'):
+                        diseases_with_pathways.add(disease_col.replace('ds:', ''))
+
+        print(f"Found {len(diseases_with_pathways)} diseases with hsa pathways, {len(all_diseases)} total diseases")
+
+        # If we got pathway data, filter; otherwise fall back to full list
+        if diseases_with_pathways:
+            diseases = [
+                {'id': did, 'name': name}
+                for did, name in all_diseases.items()
+                if did in diseases_with_pathways
+            ]
+        else:
+            diseases = [{'id': did, 'name': name} for did, name in all_diseases.items()]
+
+        diseases.sort(key=lambda x: x['name'])
+        _kegg_diseases_cache = diseases
+        return jsonify(diseases)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/suggest', methods=['POST'])
 def suggest():
     data = request.get_json()
@@ -163,14 +241,16 @@ def suggest():
     suggestions = fuzzy_search_kegg_disease(disease_name)
     return jsonify(suggestions)
 
+_recent_searches = []
+
 @app.route('/recent_searches', methods=['GET'])
 def get_recent_searches():
-    searches = Disease.query.order_by(Disease.kegg_disease_id.desc()).limit(10).all()
-    return jsonify([{'name': s.disease_name, 'id': s.kegg_disease_id} for s in searches])
+    return jsonify(_recent_searches)
 
 @app.route('/stream')
 def stream():
     disease_name = request.args.get('disease_name', '').strip()
+    disease_id = request.args.get('disease_id', '').strip() or None
     if not disease_name:
         return jsonify({"error": "No disease name provided"}), 400
 
@@ -181,10 +261,14 @@ def stream():
         result_queue.put(('progress', current, total, gene_symbol))
 
     def run_in_background():
+        global _recent_searches
         with app.app_context():
-            table_data = build_gene_receptor_ligand_table(disease_name, progress_callback)
+            table_data = build_gene_receptor_ligand_table(disease_name, progress_callback, disease_id=disease_id)
             if current_user:
                 save_user_search(current_user['username'], disease_name)
+        if table_data and not isinstance(table_data, dict):
+            _recent_searches = [{'name': disease_name}] + [s for s in _recent_searches if s['name'] != disease_name]
+            _recent_searches = _recent_searches[:3]
         result_queue.put(('result', table_data))
         result_queue.put(('done', None))
 
@@ -203,7 +287,13 @@ def stream():
 
             elif event_type == 'result':
                 _, table_data = item
-                if not table_data:
+                if isinstance(table_data, dict) and '_error' in table_data:
+                    if table_data['_error'] == 'no_pathways':
+                        payload = json.dumps({'error': 'no_pathways', 'message': 'Disease found in KEGG but has no associated human pathway data.'})
+                    else:
+                        suggestions = fuzzy_search_kegg_disease(disease_name)
+                        payload = json.dumps({'error': 'No exact match found', 'suggestions': suggestions})
+                elif not table_data:
                     suggestions = fuzzy_search_kegg_disease(disease_name)
                     payload = json.dumps({'error': 'No exact match found', 'suggestions': suggestions})
                 else:

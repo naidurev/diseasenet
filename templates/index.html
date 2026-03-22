@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiseaseNet</title>
+    <link rel="icon" type="image/png" href="/static/images/DiseaseNet_logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
@@ -21,11 +22,11 @@
         h1 { font-size: 4rem; margin-bottom: 10px; }
         h2 { font-size: 1.2rem; margin-bottom: 20px; }
         
-        .search-container { position: relative; width: 500px; max-width: 90%; }
+        .search-container { position: relative; width: 500px; max-width: 90%; z-index: 9999; }
         .search-bar { border: 2px solid white; padding: 12px 15px; width: 100%; border-radius: 5px; background-color: rgba(255,255,255,0.1); color: white; font-size: 1.1rem; outline: none; }
         .search-bar::placeholder { color: rgba(255,255,255,0.7); }
         
-        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background-color: rgba(28,20,28,0.95); border: 2px solid white; border-top: none; border-radius: 0 0 5px 5px; max-height: 300px; overflow-y: auto; display: none; z-index: 1000; }
+        .autocomplete-dropdown { position: absolute; top: 100%; left: 0; right: 0; background-color: rgba(28,20,28,0.95); border: 2px solid white; border-top: none; border-radius: 0 0 5px 5px; max-height: 300px; overflow-y: auto; display: none; z-index: 9999; }
         .autocomplete-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.2); }
         .autocomplete-item:hover { background-color: rgba(255,255,255,0.2); }
         
@@ -38,40 +39,90 @@
         .progress-bar { width: 100%; height: 30px; background-color: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 15px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #75331e, #a0522d); width: 0%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
         
-        #results-page { display: none; background-image: url('/static/images/image.png'); background-size: cover; background-position: center; background-attachment: fixed; color: white; padding: 80px 20px 50px 20px; position: relative; min-height: 100vh; }
+        #results-page { display: none; background-image: url('/static/images/image.png'); background-size: cover; background-position: center; background-attachment: fixed; color: white; padding: 80px 20px 20px 20px; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; flex-direction: column; }
         #results-page::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); z-index: 1; }
         #results-page > * { position: relative; z-index: 2; }
         
-        .action-btn { padding: 12px 25px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 1rem; border-radius: 5px; transition: all 0.3s; margin: 0 5px; }
+        .action-btn { padding: 12px 25px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 1rem; border-radius: 5px; transition: all 0.3s; margin: 0 5px; font-family: 'Montserrat', sans-serif; }
+        .action-btn:hover { background-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
         .button-container-left { position: fixed !important; top: 70px !important; left: 20px !important; z-index: 100; display: flex; gap: 10px; }
         .button-container-right { position: fixed !important; top: 70px !important; right: 20px !important; left: auto !important; z-index: 100; }
-        
-        #history-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); z-index: 2000; padding: 50px; overflow-y: auto; }
+        .table-wrapper { overflow-x: auto; overflow-y: scroll; border: 2px solid white; border-radius: 10px; background-color: rgba(0,0,0,0.3); flex: 1; min-height: 0; }
+
+        #history-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.8); z-index: 99999; padding: 50px; overflow-y: auto; }
         .history-content { max-width: 800px; margin: 0 auto; background-color: rgba(28,20,28,0.95); border: 2px solid white; border-radius: 10px; padding: 30px; color: white; }
         .close-modal { float: right; font-size: 2rem; cursor: pointer; color: white; border: none; background: none; }
         .history-item { padding: 15px; margin: 10px 0; background-color: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 5px; cursor: pointer; transition: all 0.3s; }
         .history-item:hover { background-color: rgba(255,255,255,0.2); transform: translateX(10px); }
-        
-        .table-wrapper { overflow-x: auto; max-height: 70vh; border: 2px solid white; border-radius: 10px; background-color: rgba(0,0,0,0.3); }
-        table { width: 100%; border-collapse: collapse; color: white; }
+        table { width: 100%; border-collapse: collapse; color: white; table-layout: fixed; font-size: 0.9rem; }
+        col.col-gene    { width: 85px; }
+        col.col-geneid  { width: 65px; }
+        col.col-uniprot { width: 90px; }
+        col.col-protein { width: 140px; }
+        col.col-recept  { width: 160px; }
+        col.col-func    { width: 310px; }
+        col.col-pdb     { width: 90px; }
+        col.col-ligand  { width: 230px; }
         thead { position: sticky; top: 0; background-color: rgba(42,31,42,0.95); z-index: 10; }
         th { border: 1px solid rgba(255,255,255,0.3); padding: 15px; text-align: left; cursor: pointer; user-select: none; }
         th:hover { background-color: rgba(255,255,255,0.1); }
         th::after { content: ' ⇅'; font-size: 0.8rem; opacity: 0.5; }
         th.sort-asc::after { content: ' ▲'; opacity: 1; }
         th.sort-desc::after { content: ' ▼'; opacity: 1; }
-        td { border: 1px solid rgba(255,255,255,0.2); padding: 20px; position: relative; text-align: justify; vertical-align: top; word-wrap: break-word; }
+        td { border: 1px solid rgba(255,255,255,0.2); padding: 12px 15px; position: relative; text-align: left; vertical-align: top; word-wrap: break-word; overflow-wrap: break-word; word-break: break-word; line-height: 1.5; }
         .copy-btn { position: absolute; bottom: 5px; right: 5px; background-color: rgba(255,255,255,0.1); color: white; border: 1px solid white; padding: 4px 8px; border-radius: 3px; font-size: 0.75rem; cursor: pointer; opacity: 0; transition: opacity 0.2s; }
         td:hover .copy-btn { opacity: 1; }
         .ligand-item { display: block; margin-bottom: 8px; }
         .ligand-potency { font-weight: bold; color: white; }
-        .receptor-item { display: block; margin-bottom: 6px; padding-left: 15px; text-indent: -15px; }
-        .receptor-item::before { content: "• "; color: rgba(255,255,255,0.7); font-weight: bold; }
+        .receptor-item { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; word-break: break-word; overflow-wrap: break-word; min-width: 0; }
+        .receptor-item::before { content: "•"; color: rgba(255,255,255,0.7); font-weight: bold; flex-shrink: 0; }
         .cell-copied { background-color: rgba(76, 175, 80, 0.3) !important; transition: background-color 0.3s; }
+        tbody tr:nth-child(even) { background-color: rgba(255,255,255,0.05); }
+        tbody tr:hover { background-color: rgba(255,255,255,0.1); }
+        .truncate-content { overflow: hidden; }
+        .truncate-content.collapsed { max-height: 80px; overflow: hidden; }
+        .truncate-toggle { display: inline-block; margin-top: 4px; color: rgba(255,255,255,0.5); font-size: 0.75rem; cursor: pointer; border: none; background: none; padding: 0; font-family: 'Montserrat', sans-serif; }
+        .truncate-toggle:hover { color: white; }
+        td a { color: white; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.4); }
+        td a:hover { border-bottom-color: white; }
         .toast { position: fixed; bottom: 30px; right: 30px; background-color: rgba(76, 175, 80, 0.95); color: white; padding: 15px 25px; border-radius: 5px; font-weight: bold; z-index: 10000; animation: slideIn 0.3s ease-out; }
         @keyframes slideIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .spinner { margin: 20px auto; border: 5px solid rgba(255,255,255,0.2); border-top: 5px solid white; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* DNA Helix */
+        #dna-canvas { display: block; margin: 16px auto; }
+
+        /* Did you mean page */
+        #did-you-mean-page { display: none; }
+        .dym-box { background-color: rgba(28,20,28,0.92); border: 2px solid rgba(255,255,255,0.5); border-radius: 12px; padding: 40px; max-width: 580px; width: 90%; text-align: center; }
+        .dym-box h2 { font-size: 1.4rem; margin-bottom: 8px; }
+        .dym-query { color: rgba(255,255,255,0.6); font-size: 0.95rem; margin-bottom: 28px; }
+        .dym-query span { color: white; font-style: italic; }
+        .dym-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+        .dym-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background-color: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.25); border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: left; }
+        .dym-item:hover { background-color: rgba(255,255,255,0.18); border-color: white; transform: translateX(4px); }
+        .dym-item-name { font-size: 1rem; font-weight: 500; }
+        .dym-score { font-size: 0.85rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; white-space: nowrap; margin-left: 12px; flex-shrink: 0; }
+        .score-high { background-color: rgba(76,175,80,0.3); color: #a5d6a7; border: 1px solid rgba(76,175,80,0.5); }
+        .score-mid  { background-color: rgba(255,193,7,0.25); color: #ffe082; border: 1px solid rgba(255,193,7,0.4); }
+        .score-low  { background-color: rgba(244,67,54,0.2); color: #ef9a9a; border: 1px solid rgba(244,67,54,0.35); }
+        .dym-back { padding: 10px 24px; background: none; color: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; cursor: pointer; font-size: 0.9rem; transition: all 0.2s; font-family: 'Montserrat', sans-serif; }
+        .dym-back:hover { color: white; border-color: white; }
+
+        /* KEGG browse modal */
+        #kegg-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.92); z-index: 10000; padding: 40px 20px; overflow: hidden; }
+        .kegg-modal-content { max-width: 680px; margin: 0 auto; background-color: rgba(28,20,28,0.98); border: 2px solid white; border-radius: 12px; padding: 30px; color: white; height: 100%; max-height: 80vh; display: flex; flex-direction: column; }
+        .kegg-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0; }
+        .kegg-modal-header h2 { margin: 0; font-size: 1.3rem; }
+        #kegg-search-input { width: 100%; padding: 10px 14px; border: 2px solid rgba(255,255,255,0.4); border-radius: 6px; background-color: rgba(255,255,255,0.08); color: white; font-size: 0.95rem; font-family: 'Montserrat', sans-serif; outline: none; margin-bottom: 14px; flex-shrink: 0; }
+        #kegg-search-input::placeholder { color: rgba(255,255,255,0.4); }
+        #kegg-search-input:focus { border-color: white; }
+        #kegg-list { overflow-y: auto; flex: 1; }
+        .kegg-list-item { padding: 11px 14px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; transition: background 0.15s; }
+        .kegg-list-item:hover { background-color: rgba(255,255,255,0.12); }
+        .kegg-list-count { font-size: 0.8rem; color: rgba(255,255,255,0.45); margin-bottom: 10px; flex-shrink: 0; }
+        .kegg-loading { text-align: center; padding: 40px; opacity: 0.6; }
+        .browse-btn { padding: 12px 20px; background-color: rgba(255,255,255,0.08); color: white; border: 2px solid rgba(255,255,255,0.5); cursor: pointer; font-size: 0.95rem; border-radius: 5px; transition: all 0.3s; margin: 10px 5px; font-family: 'Montserrat', sans-serif; }
+        .browse-btn:hover { background-color: rgba(255,255,255,0.2); border-color: white; }
     </style>
 </head>
 <body>
@@ -106,14 +157,12 @@
             <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
         </div>
         
-        <button class="search-btn" onclick="submitSearch()">Search</button>
-        
-        <div class="example-diseases" style="margin-top:30px;">
-            <p>Try searching for:</p>
-            <button class="example-btn" onclick="searchExample('Diabetes mellitus')">Diabetes</button>
-            <button class="example-btn" onclick="searchExample('Alzheimer disease')">Alzheimer's</button>
-            <button class="example-btn" onclick="searchExample('Breast cancer')">Breast Cancer</button>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:0;">
+            <button class="search-btn" onclick="submitSearch()">Search</button>
+            <span style="color:rgba(255,255,255,0.8); font-size:0.9rem; margin:6px 0; font-weight:500;">or</span>
+            <button class="browse-btn" onclick="openKeggModal()">Browse Diseases</button>
         </div>
+        
         
         <div id="recent-searches" class="recent-searches" style="display: none;">
             <h3>Recent Searches</h3>
@@ -121,32 +170,63 @@
         </div>
     </div>
 
-    <div id="retrieving-info" class="shared-background" style="display: none;">
-        <h2>Retrieving information...</h2>
-        <div class="spinner"></div>
-        <div style="width:80%; max-width:600px; margin-top:30px;">
-            <div class="progress-bar">
-                <div id="progress-fill" class="progress-fill">0%</div>
-            </div>
-            <div id="progress-text" style="margin-top:15px; color:white;">Initializing...</div>
+    <!-- Did You Mean page -->
+    <div id="did-you-mean-page" class="shared-background" style="display:none;">
+        <div class="dym-box">
+            <h2>No exact match found</h2>
+            <p class="dym-query">Searched for: <span id="dym-query-text"></span></p>
+            <div class="dym-list" id="dym-list"></div>
+            <button class="dym-back" onclick="goBackToHome()">&#8592; Back to search</button>
         </div>
     </div>
 
+    <!-- KEGG Browse Modal -->
+    <div id="kegg-modal">
+        <div class="kegg-modal-content">
+            <div class="kegg-modal-header">
+                <h2>Browse KEGG Diseases</h2>
+                <button class="close-modal" onclick="closeKeggModal()">&times;</button>
+            </div>
+            <input type="text" id="kegg-search-input" placeholder="Filter diseases..." oninput="filterKeggList()">
+            <div class="kegg-list-count" id="kegg-list-count"></div>
+            <div id="kegg-list"><div class="kegg-loading">Loading disease list...</div></div>
+        </div>
+    </div>
+
+    <div id="retrieving-info" class="shared-background" style="display: none;">
+        <h2>Retrieving information...</h2>
+        <canvas id="dna-canvas" width="60" height="130"></canvas>
+        <div id="progress-text" style="color:rgba(255,255,255,0.85); font-size:1rem; letter-spacing:0.5px;">Initializing...</div>
+        <div id="progress-fill" style="display:none;"></div>
+    </div>
+
     <div id="results-page">
-        <div class="button-container-left"><button class="action-btn" onclick="goBackToHome()">← Back</button><button class="action-btn" onclick="exportToCSV()">Export CSV</button></div>
-        
-        
-        <div style="margin-top:20px; text-align:center;">
+        <div class="button-container-left">
+            <button class="action-btn" onclick="goBackToHome()">← Back</button>
+            <button class="action-btn" onclick="exportToCSV()">Export CSV</button>
+        </div>
+
+        <div style="margin-top:20px; text-align:center; margin-bottom:16px;">
             <h2>Results for: <span id="disease-name-result"></span></h2>
         </div>
-        
+
         <div style="margin:20px 0;">
-            <input type="text" id="table-search" placeholder="Filter results..." onkeyup="filterTable()" 
-                   style="padding:10px; border-radius:5px; border:2px solid white; background-color:rgba(255,255,255,0.1); color:white; width:300px;">
+            <input type="text" id="table-search" placeholder="Filter results..." onkeyup="filterTable()"
+                   style="padding:10px; border-radius:5px; border:2px solid white; background-color:rgba(255,255,255,0.1); color:white; width:300px; font-family:'Montserrat',sans-serif;">
         </div>
         
         <div class="table-wrapper">
             <table id="results-table">
+                <colgroup>
+                    <col class="col-gene">
+                    <col class="col-geneid">
+                    <col class="col-uniprot">
+                    <col class="col-protein">
+                    <col class="col-recept">
+                    <col class="col-func">
+                    <col class="col-pdb">
+                    <col class="col-ligand">
+                </colgroup>
                 <thead>
                     <tr>
                         <th onclick="sortTable(0)">Gene Name</th>
@@ -169,6 +249,7 @@
         let activeEventSource = null;
         let sortColumn = -1;
         let sortAscending = true;
+        let searchSucceeded = false;
 
         window.onload = function() {
             loadRecentSearches();
@@ -202,7 +283,7 @@
                     suggestions.slice(0, 5).forEach(s => {
                         const item = document.createElement('div');
                         item.className = 'autocomplete-item';
-                        item.innerHTML = `${s.name} <span style="opacity:0.7">(${s.score}%)</span>`;
+                        item.innerHTML = `${s.name} <span style="opacity:0.7">(${Math.round(s.score)}%)</span>`;
                         item.onclick = () => {
                             document.getElementById('disease_name').value = s.name;
                             dropdown.style.display = 'none';
@@ -244,7 +325,10 @@
 
         function formatFunctionalRole(roleText) {
             if (!roleText) return roleText;
-            return roleText.replace(/(PubMed:[0-9]+)/g, "$1<br><br>");
+            // Only add a break after a PubMed ref when it's followed by a closing paren+period or similar sentence end
+            return roleText
+                .replace(/\(PubMed(:[0-9]+(,\s*[0-9]+)*)\)/g, '<span style="opacity:0.6;font-size:0.85em">(PubMed$1)</span>')
+                .replace(/\)\.\s+/g, ').<br>');
         }
 
         function formatReceptors(receptorsText) {
@@ -253,54 +337,85 @@
             return receptors.map(receptor => `<span class="receptor-item">${receptor}</span>`).join("");
         }
 
-        function formatLigands(ligandsText) {
-            if (!ligandsText || ligandsText === 'No ligand data available') return ligandsText;
-            
+        function formatLigands(ligandsText, ligandsStruct) {
+            if (!ligandsText || ligandsText === 'No ligand data available' || ligandsText === 'No gene ID found') return ligandsText;
+
+            // If we have struct data with CIDs, use that for links
+            if (ligandsStruct && ligandsStruct.length > 0) {
+                return ligandsStruct.map(l => {
+                    const url = `https://pubchem.ncbi.nlm.nih.gov/compound/${l.cid}`;
+                    return `<span class="ligand-item"><a href="${url}" target="_blank" style="color:white;">${l.name}</a> <span class="ligand-potency">(${l.potency_um} uM)</span></span>`;
+                }).join('');
+            }
+
+            // Fallback: plain text
             const ligands = ligandsText.split(';').map(l => l.trim()).filter(l => l);
             return ligands.map(ligand => {
                 const match = ligand.match(/^(.+?)\s*\(([^)]+)\)$/);
                 if (match) {
-                    const name = match[1].trim();
-                    const potency = match[2].trim();
-                    return `<span class="ligand-item">${name} <span class="ligand-potency">(${potency})</span></span>`;
+                    return `<span class="ligand-item">${match[1].trim()} <span class="ligand-potency">(${match[2].trim()})</span></span>`;
                 }
                 return `<span class="ligand-item">${ligand}</span>`;
             }).join('');
         }
 
-        function submitSearch() {
+        function formatGeneId(geneId) {
+            if (!geneId || geneId === 'N/A' || geneId === 'Error') return geneId;
+            return `<a href="https://www.ncbi.nlm.nih.gov/gene/${geneId}" target="_blank" style="color:white;">${geneId}</a>`;
+        }
+
+        function formatUniprotId(uniprotId) {
+            if (!uniprotId || uniprotId === 'N/A' || uniprotId === 'Error') return uniprotId;
+            return `<a href="https://www.uniprot.org/uniprotkb/${uniprotId}" target="_blank" style="color:white;">${uniprotId}</a>`;
+        }
+
+        function formatPdbIds(pdbText) {
+            if (!pdbText || pdbText === 'No PDB IDs' || pdbText === 'Error') return pdbText;
+            return pdbText.split(',').map(id => {
+                const clean = id.trim();
+                return `<a href="https://www.rcsb.org/structure/${clean}" target="_blank" style="color:white;">${clean}</a>`;
+            }).join(', ');
+        }
+
+        function submitSearch(diseaseId) {
             const diseaseName = document.getElementById('disease_name').value.trim();
             if (!diseaseName) return;
+            searchSucceeded = false;
+            console.log('submitSearch called with diseaseId:', diseaseId);
             document.getElementById('autocomplete-dropdown').style.display = 'none';
             document.getElementById('first-page').style.display = 'none';
+            document.getElementById('did-you-mean-page').style.display = 'none';
             document.getElementById('retrieving-info').style.display = 'flex';
 
-            document.getElementById('progress-fill').style.width = '0%';
-            document.getElementById('progress-fill').textContent = '0%';
             document.getElementById('progress-text').textContent = 'Initializing...';
 
             if (activeEventSource) activeEventSource.close();
 
-            const encodedName = encodeURIComponent(diseaseName);
-            activeEventSource = new EventSource(`/stream?disease_name=${encodedName}`);
+            let url = `/stream?disease_name=${encodeURIComponent(diseaseName)}`;
+            if (diseaseId) url += `&disease_id=${encodeURIComponent(diseaseId)}`;
+            activeEventSource = new EventSource(url);
 
             activeEventSource.addEventListener('progress', function(e) {
                 const payload = JSON.parse(e.data);
-                const pct = Math.round((payload.current / payload.total) * 100);
-                document.getElementById('progress-fill').style.width = pct + '%';
-                document.getElementById('progress-fill').textContent = pct + '%';
                 document.getElementById('progress-text').textContent =
                     `Processing gene ${payload.current} of ${payload.total}: ${payload.gene}`;
             });
 
             activeEventSource.addEventListener('result', function(e) {
                 const data = JSON.parse(e.data);
-                if (data.error) {
+                console.log('result event received:', data.error ? 'ERROR: ' + data.error : 'OK, rows: ' + data.length);
+                if (data.error === 'no_pathways') {
+                    searchSucceeded = true;
                     activeEventSource.close();
                     activeEventSource = null;
-                    alert('No exact match found for "' + diseaseName + '"');
-                    goBackToHome();
+                    showNoPathways(document.getElementById('disease_name').value.trim());
+                } else if (data.error) {
+                    searchSucceeded = true;
+                    activeEventSource.close();
+                    activeEventSource = null;
+                    showDidYouMean(document.getElementById('disease_name').value.trim(), data.suggestions || []);
                 } else {
+                    searchSucceeded = true;
                     document.getElementById('progress-fill').style.width = '100%';
                     document.getElementById('progress-fill').textContent = '100%';
                     displayResults(diseaseName, data);
@@ -308,21 +423,21 @@
             });
 
             activeEventSource.addEventListener('done', function(e) {
-                activeEventSource.close();
+                if (activeEventSource) activeEventSource.close();
                 activeEventSource = null;
             });
 
             activeEventSource.onerror = function() {
-                activeEventSource.close();
+                if (searchSucceeded) return;
+                if (activeEventSource) activeEventSource.close();
                 activeEventSource = null;
-                alert('Error fetching data');
-                goBackToHome();
+                showDidYouMean(document.getElementById('disease_name').value.trim(), []);
             };
         }
 
         function displayResults(diseaseName, data) {
             document.getElementById('retrieving-info').style.display = 'none';
-            document.getElementById('results-page').style.display = 'block';
+            document.getElementById('results-page').style.display = 'flex';
             currentData = data;
             document.getElementById('disease-name-result').textContent = diseaseName;
             const tbody = document.getElementById('results-table-body');
@@ -331,17 +446,39 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${row['Gene Name']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
-                    <td>${row['Gene ID']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
-                    <td>${row['UniProt ID']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${formatGeneId(row['Gene ID'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${formatUniprotId(row['UniProt ID'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
                     <td>${row['Protein Name']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
-                    <td>${formatReceptors(row['Receptors (Interacting)'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
-                    <td>${formatFunctionalRole(row['Functional Role'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
-                    <td>${row['PDB ID']}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
-                    <td>${formatLigands(row['Ligands'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td><div class="truncate-content collapsed">${formatReceptors(row['Receptors (Interacting)'])}</div><button class="truncate-toggle" onclick="toggleTruncate(this)">▼ Show more</button><button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td><div class="truncate-content collapsed">${formatFunctionalRole(row['Functional Role'])}</div><button class="truncate-toggle" onclick="toggleTruncate(this)">▼ Show more</button><button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td>${formatPdbIds(row['PDB ID'])}<button class="copy-btn" onclick="copy(this)">Copy</button></td>
+                    <td><div class="truncate-content collapsed">${formatLigands(row['Ligands'], row['ligands_struct'])}</div><button class="truncate-toggle" onclick="toggleTruncate(this)">▼ Show more</button><button class="copy-btn" onclick="copy(this)">Copy</button></td>
                 `;
                 tbody.appendChild(tr);
             });
             loadRecentSearches();
+            setTimeout(hideShortToggles, 50);
+        }
+
+        function toggleTruncate(btn) {
+            const content = btn.previousElementSibling;
+            const isCollapsed = content.classList.contains('collapsed');
+            content.classList.toggle('collapsed', !isCollapsed);
+            btn.textContent = isCollapsed ? '▲ Show less' : '▼ Show more';
+        }
+
+        function hideShortToggles() {
+            document.querySelectorAll('.truncate-content').forEach(content => {
+                const toggle = content.nextElementSibling;
+                if (!toggle || !toggle.classList.contains('truncate-toggle')) return;
+                content.classList.remove('collapsed');
+                const fullHeight = content.scrollHeight;
+                content.classList.add('collapsed');
+                if (fullHeight <= 85) {
+                    content.classList.remove('collapsed');
+                    toggle.style.display = 'none';
+                }
+            });
         }
 
         function sortTable(columnIndex) {
@@ -460,15 +597,190 @@
             document.getElementById('history-modal').style.display = 'none';
         }
 
+        function showNoPathways(query) {
+            document.getElementById('retrieving-info').style.display = 'none';
+            document.getElementById('first-page').style.display = 'none';
+            document.getElementById('dym-query-text').textContent = '"' + query + '"';
+            const list = document.getElementById('dym-list');
+            list.innerHTML = `
+                <p style="opacity:0.75; margin:20px 0; line-height:1.7;">
+                    This disease was found in KEGG but has no associated human pathway data,
+                    so gene and protein information cannot be retrieved.
+                </p>`;
+            document.getElementById('did-you-mean-page').querySelector('h2').textContent = 'No pathway data available';
+            document.getElementById('did-you-mean-page').style.display = 'flex';
+        }
+
+        function showDidYouMean(query, suggestions) {
+            document.getElementById('retrieving-info').style.display = 'none';
+            document.getElementById('first-page').style.display = 'none';
+            document.getElementById('did-you-mean-page').querySelector('h2').textContent = 'No exact match found';
+            document.getElementById('dym-query-text').textContent = '"' + query + '"';
+            const list = document.getElementById('dym-list');
+            list.innerHTML = '';
+            if (!suggestions || suggestions.length === 0) {
+                list.innerHTML = '<p style="opacity:0.6; margin:20px 0;">No similar diseases found. Try a different search term or use Browse Diseases.</p>';
+            } else {
+                const maxScore = Math.max(...suggestions.map(s => s.score));
+                suggestions.forEach(s => {
+                    const scoreClass = s.score >= 85 ? 'score-high' : s.score >= 70 ? 'score-mid' : 'score-low';
+                    const item = document.createElement('div');
+                    item.className = 'dym-item';
+                    item.innerHTML = `
+                        <span class="dym-item-name">${s.name}</span>
+                        <span class="dym-score ${scoreClass}">${Math.round(s.score)}% match</span>
+                    `;
+                    item.onclick = () => {
+                        document.getElementById('disease_name').value = s.name;
+                        document.getElementById('did-you-mean-page').style.display = 'none';
+                        submitSearch(s.id);
+                    };
+                    list.appendChild(item);
+                });
+                if (maxScore < 70) {
+                    const note = document.createElement('p');
+                    note.style.cssText = 'opacity:0.5; font-size:0.85rem; margin-top:12px;';
+                    note.textContent = 'Low confidence matches — consider using Browse Diseases for the full list.';
+                    list.appendChild(note);
+                }
+            }
+            document.getElementById('did-you-mean-page').style.display = 'flex';
+        }
+
+        // KEGG browse modal
+        let allKeggDiseases = [];
+        let keggLoaded = false;
+
+        function openKeggModal() {
+            document.getElementById('kegg-modal').style.display = 'block';
+            if (!keggLoaded) loadKeggDiseases();
+            setTimeout(() => document.getElementById('kegg-search-input').focus(), 100);
+        }
+
+        function closeKeggModal() {
+            document.getElementById('kegg-modal').style.display = 'none';
+        }
+
+        function loadKeggDiseases() {
+            fetch('/diseases')
+            .then(r => r.json())
+            .then(diseases => {
+                allKeggDiseases = diseases;
+                keggLoaded = true;
+                renderKeggList(diseases);
+            })
+            .catch(() => {
+                document.getElementById('kegg-list').innerHTML = '<div class="kegg-loading">Failed to load disease list.</div>';
+            });
+        }
+
+        function renderKeggList(diseases) {
+            const container = document.getElementById('kegg-list');
+            const count = document.getElementById('kegg-list-count');
+            count.textContent = `${diseases.length} diseases`;
+            if (diseases.length === 0) {
+                container.innerHTML = '<div class="kegg-loading">No diseases match your filter.</div>';
+                return;
+            }
+            container.innerHTML = '';
+            diseases.forEach(d => {
+                const item = document.createElement('div');
+                item.className = 'kegg-list-item';
+                item.textContent = d.name;
+                item.onclick = () => {
+                    document.getElementById('disease_name').value = d.name;
+                    closeKeggModal();
+                    submitSearch(d.id);
+                };
+                container.appendChild(item);
+            });
+        }
+
+        function filterKeggList() {
+            const query = document.getElementById('kegg-search-input').value.toLowerCase();
+            const filtered = allKeggDiseases.filter(d => d.name.toLowerCase().includes(query));
+            renderKeggList(filtered);
+        }
+
+        // close KEGG modal on backdrop click
+        document.getElementById('kegg-modal').addEventListener('click', function(e) {
+            if (e.target === this) closeKeggModal();
+        });
+
         function goBackToHome() {
             document.getElementById('results-page').style.display = 'none';
             document.getElementById('retrieving-info').style.display = 'none';
+            document.getElementById('did-you-mean-page').style.display = 'none';
             document.getElementById('first-page').style.display = 'flex';
             if (activeEventSource) {
                 activeEventSource.close();
                 activeEventSource = null;
             }
         }
+    </script>
+
+    <script>
+        (function() {
+            const canvas = document.getElementById('dna-canvas');
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width, H = canvas.height;
+            const cx = W / 2;
+            const amp = 24, period = 70, rungStep = 14;
+            let offset = 0;
+
+            function xA(wy) { return cx + amp * Math.cos(2 * Math.PI * wy / period); }
+            function xB(wy) { return cx - amp * Math.cos(2 * Math.PI * wy / period); }
+            function depthZ_A(wy) { return  Math.sin(2 * Math.PI * wy / period); }
+            function depthZ_B(wy) { return -Math.sin(2 * Math.PI * wy / period); }
+
+            function toAlpha(z)  { return 0.2 + 0.8 * ((z + 1) / 2); }
+            function toWidth(z)  { return 0.7 + 2.2 * ((z + 1) / 2); }
+            function toGlow(z)   { return z > 0.3 ? 5 : 0; }
+
+            function drawSeg(x1, y1, x2, y2, alpha, lw, glow) {
+                if (glow > 0) {
+                    ctx.save();
+                    ctx.shadowColor = `rgba(180,220,255,${alpha})`;
+                    ctx.shadowBlur = glow;
+                }
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+                ctx.lineWidth = lw;
+                ctx.stroke();
+                if (glow > 0) ctx.restore();
+            }
+
+            function frame() {
+                ctx.clearRect(0, 0, W, H);
+
+                const segs = [];
+                const step = 3;
+
+                for (let sy = 0; sy <= H; sy += step) {
+                    const wy = sy + offset;
+                    const za = depthZ_A(wy), zb = depthZ_B(wy);
+                    segs.push({ x1: xA(wy), y1: sy, x2: xA(wy+step), y2: sy+step, z: za, a: toAlpha(za), lw: toWidth(za), g: toGlow(za) });
+                    segs.push({ x1: xB(wy), y1: sy, x2: xB(wy+step), y2: sy+step, z: zb, a: toAlpha(zb), lw: toWidth(zb), g: toGlow(zb) });
+                }
+
+                const firstWy = Math.ceil(offset / rungStep) * rungStep;
+                for (let wy = firstWy; wy <= offset + H; wy += rungStep) {
+                    const sy = wy - offset;
+                    const za = depthZ_A(wy);
+                    const ra = 0.15 + 0.45 * ((za + 1) / 2);
+                    segs.push({ x1: xA(wy), y1: sy, x2: xB(wy), y2: sy, z: 0, a: ra, lw: 0.7 + 0.6 * ((za+1)/2), g: za > 0.2 ? 3 : 0 });
+                }
+
+                segs.sort((a, b) => a.z - b.z);
+                for (const s of segs) drawSeg(s.x1, s.y1, s.x2, s.y2, s.a, s.lw, s.g);
+
+                offset += 0.2;
+                requestAnimationFrame(frame);
+            }
+            frame();
+        })();
     </script>
 </body>
 </html>
