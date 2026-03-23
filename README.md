@@ -87,7 +87,8 @@ diseasenet/
 │   └── index.html          # Frontend interface
 ├── static/
 │   └── images/
-│       └── image.png       # Background image
+│       ├── image.png       # Background image
+│       └── DiseaseNet_logo.png  # App favicon
 ├── requirements.txt        # Python dependencies
 ├── README.md              # This file
 └── .gitignore            # Git ignore rules
