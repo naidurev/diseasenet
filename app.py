@@ -193,36 +193,11 @@ def get_diseases():
         if all_resp.status_code != 200:
             return jsonify([])
 
-        all_diseases = {}
+        diseases = []
         for line in all_resp.text.strip().split('\n'):
             parts = line.split('\t')
             if len(parts) >= 2:
-                all_diseases[parts[0]] = parts[1]
-
-        # Get diseases that have hsa pathway links
-        # link_pd format: "ds:H00021\tpath:hsa05211"
-        diseases_with_pathways = set()
-        link_resp = req.get('http://rest.kegg.jp/link/pathway/disease', timeout=15)
-        if link_resp.status_code == 200 and link_resp.text.strip():
-            for line in link_resp.text.strip().split('\n'):
-                parts = line.split('\t')
-                if len(parts) == 2:
-                    disease_col = parts[0].strip()
-                    pathway_col = parts[1].strip()
-                    if 'hsa' in pathway_col and disease_col.startswith('ds:'):
-                        diseases_with_pathways.add(disease_col.replace('ds:', ''))
-
-        print(f"Found {len(diseases_with_pathways)} diseases with hsa pathways, {len(all_diseases)} total diseases")
-
-        # If we got pathway data, filter; otherwise fall back to full list
-        if diseases_with_pathways:
-            diseases = [
-                {'id': did, 'name': name}
-                for did, name in all_diseases.items()
-                if did in diseases_with_pathways
-            ]
-        else:
-            diseases = [{'id': did, 'name': name} for did, name in all_diseases.items()]
+                diseases.append({'id': parts[0].strip(), 'name': parts[1].strip()})
 
         diseases.sort(key=lambda x: x['name'])
         _kegg_diseases_cache = diseases
