@@ -52,3 +52,6 @@ Thumbs.db
 *_FINAL*
 *_OLD*
 instance/users/*.db
+instance/diseasenet.db
+outputs/
+uploads/
