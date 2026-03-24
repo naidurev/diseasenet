@@ -1,187 +1,216 @@
 # DiseaseNet
 
-A comprehensive disease-gene-protein-ligand database search tool that integrates data from KEGG, UniProt, and PubChem databases.
+A bioinformatics web application that maps human diseases to their associated genes, receptors, ligands, and drug compounds — pulling live data from KEGG, UniProt, and PubChem.
 
-![DiseaseNet Screenshot](https://img.shields.io/badge/Status-Production%20Ready-success)
-![Python](https://img.shields.io/badge/Python-3.8+-blue)
+![Python](https://img.shields.io/badge/Python-3.9+-blue)
 ![Flask](https://img.shields.io/badge/Flask-3.0-green)
+![SQLite](https://img.shields.io/badge/Database-SQLite-lightgrey)
 
 ---
 
 ## Overview
 
-DiseaseNet is a Flask web application that allows researchers to quickly search for disease-associated genes and retrieve comprehensive information including:
+DiseaseNet lets you type any human disease name and get back a detailed table of genes involved in that disease's pathways, with protein annotations, receptor/ligand classification, associated drug compounds, and links to 3D protein structures.
 
-- Gene and protein information
-- Receptor interactions
-- Active ligands with bioactivity data
-- 3D protein structures (PDB IDs)
-- Functional roles and pathways
+Developed as part of the **Databases and Web Design** course in the MSc Bioinformatics for Health Sciences programme at **Universitat Pompeu Fabra (UPF) / Universitat de Barcelona**, 2024–2025.
+
+**Authors**: Austin Gilbride · Brigita Medelyte · Revanth Naidu
 
 ---
 
 ## Features
 
-- **Intelligent Search**: Autocomplete and fuzzy matching for disease names
-- **Comprehensive Data**: Integration of KEGG, UniProt, and PubChem databases
-- **Real-time Progress**: Live updates during data processing
-- **Interactive Results**: Sortable, filterable table with 100+ genes per disease
-- **Export Options**: Download results as CSV
-- **Smart UI**: Copy cells with one click, highlight on copy
-- **Modern Design**: Clean interface with responsive layout
+- Fuzzy disease name search with autocomplete and "Did you mean?" suggestions
+- Browse the full KEGG disease catalogue (~3000 diseases) via a searchable modal
+- Real-time progress bar as gene data is fetched (Server-Sent Events)
+- Results table: gene symbol, protein name, functional role, receptor/ligand status, drug compounds, PDB structure links
+- Export results to CSV
+- User accounts (sign up / log in) with per-user search history
+- Recent searches shown on the home page (last 3)
 
 ---
 
-##Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- Python 3.8 or higher
-- pip (Python package manager)
+- Python 3.9 or higher
+- pip
 
-### Installation
+### Install
 
-1. **Clone the repository**
-```bash
-git clone https://github.com/yourusername/diseasenet.git
-cd diseasenet
-```
-
-2. **Install dependencies**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. **Run the application**
+### Run (development)
+
 ```bash
 python app.py
 ```
 
-4. **Open in browser**
-```
-http://127.0.0.1:5000/
+On Windows you can also double-click `run.bat`.
+
+Open your browser at: `http://127.0.0.1:5000`
+
+### Run (production)
+
+```bash
+gunicorn -c gunicorn.conf.py wsgi:app
 ```
 
 ---
 
-##Usage
+## Usage
 
-1. **Enter a disease name** (e.g., "Breast cancer", "Diabetes mellitus")
-2. **Select from autocomplete suggestions** or use example buttons
-3. **Wait for processing** (30-60 seconds for ~100 genes)
-4. **Explore results**:
-   - Sort by clicking column headers
-   - Filter using the search box
-   - Copy individual cells by hovering and clicking "Copy"
-5. **Export data** by clicking "Export CSV"
+1. Type a disease name in the search bar (e.g. `Breast cancer`, `Type 2 diabetes`)
+2. Pick a suggestion from autocomplete, or hit **Search**
+3. Watch the real-time progress as gene data loads
+4. Explore the results table — hover a row to see full text, click PDB IDs to open structures
+5. Click **Export CSV** to download the data
+6. Sign up / log in to save your search history
 
 ---
 
-##Project Structure
+## Project Structure
 
 ```
 diseasenet/
-├── app.py                  # Flask application & routes
-├── backend.py              # API integration & data processing
-├── templates/
-│   └── index.html          # Frontend interface
-├── static/
-│   └── images/
-│       ├── image.png       # Background image
-│       └── DiseaseNet_logo.png  # App favicon
+├── app.py                  # Flask routes and server logic
+├── backend.py              # Data-fetching pipeline (KEGG → UniProt → PubChem)
+├── wsgi.py                 # Gunicorn WSGI entry point
+├── gunicorn.conf.py        # Gunicorn configuration
+├── run.bat                 # Windows dev launcher
 ├── requirements.txt        # Python dependencies
-├── README.md              # This file
-└── .gitignore            # Git ignore rules
+├── db/
+│   ├── __init__.py         # SQLAlchemy db instance
+│   └── models.py           # User and UserSearch ORM models
+├── instance/
+│   └── diseasenet.db       # Main SQLite database (users table)
+├── templates/
+│   ├── index.html          # Main single-page UI
+│   └── auth.html           # Login / Sign-up page
+├── static/
+│   └── images/             # Logo, background
+├── uploads/                # Temp files (gitignored)
+└── outputs/                # Generated CSV exports (gitignored)
 ```
 
 ---
 
-##Data Sources
+## Data Sources
 
-### KEGG (Kyoto Encyclopedia of Genes and Genomes)
-- Disease-pathway associations
-- Gene identification
-- Biological pathway context
-
-### UniProt (Universal Protein Resource)
-- Protein names and descriptions
-- Functional annotations
-- PDB structure IDs
-- Receptor interactions
-
-### PubChem (NCBI Chemical Database)
-- Bioactivity screening data
-- Active compound identification
-- Ligand potency values (μM)
+| Source | What we use it for |
+|--------|--------------------|
+| **KEGG** | Disease → pathway associations; gene IDs in each pathway (via KGML) |
+| **UniProt** | Protein name, functional description, receptor/ligand keywords, PDB IDs |
+| **PubChem** | Gene → compound bioactivity data; drug compound names |
 
 ---
 
-##Output Data
-
-Each search returns a comprehensive table with:
+## Output Table Columns
 
 | Column | Description |
 |--------|-------------|
-| **Gene Name** | Official gene symbol |
-| **Gene ID** | NCBI Gene ID |
-| **UniProt ID** | Protein database identifier |
-| **Protein Name** | Full protein name |
-| **Receptors** | Interacting receptor proteins |
-| **Functional Role** | Biological function description |
-| **PDB ID** | 3D structure database IDs |
-| **Ligands** | Active compounds with potency |
+| Gene | HGNC gene symbol |
+| Protein Name | Full protein name from UniProt |
+| Functional Role | Biological function from UniProt (expandable) |
+| Receptor / Ligand | Classification from UniProt keywords |
+| Drug Compounds | Bioactive compounds from PubChem |
+| PDB IDs | Clickable links to RCSB Protein Data Bank |
 
 ---
 
-##Technical Details
+## How It Works
 
-### Built With
+### 1. Disease Search and Fuzzy Matching
 
-- **Backend**: Flask (Python)
-- **APIs**: KEGG REST, UniProt REST, PubChem PUG REST
-- **Data Processing**: Pandas, NumPy
-- **Fuzzy Matching**: FuzzyWuzzy
-- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+The user types a disease name. As they type, the frontend calls `/suggest` which uses **rapidfuzz** (`WRatio` scorer) to match the input against the full KEGG disease list cached in memory. If the exact search returns no KEGG match, a "Did you mean?" page is shown with the top scored candidates.
 
-### Performance
+The user can also click **Browse Diseases** to open a modal with the full list of ~3000 KEGG diseases, filterable by typing.
 
-- Parallel processing with 5 concurrent workers
-- Rate limiting: 4 requests/second to PubChem
-- Retry logic with exponential backoff
-- Expected processing time: ~1-2 seconds per gene
+### 2. Real-Time Streaming (SSE)
 
-##Contributing
+When the user submits a search, the browser opens a **Server-Sent Events** connection to `/stream`. The Flask backend launches a background thread that runs the full pipeline and pushes two types of events back to the browser:
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- `progress` — `{ current, total, gene }` — updates the progress bar
+- `result` — the complete JSON table data (or an error)
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+This avoids HTTP timeouts and lets the user see progress in real time.
+
+### 3. KEGG Pathway Lookup
+
+The backend calls:
+1. `http://rest.kegg.jp/find/disease/<name>` — find the KEGG disease ID
+2. `http://rest.kegg.jp/link/pathway/<disease_id>` — get all pathways linked to this disease, filtered to human (`hsa`) pathways
+3. `http://rest.kegg.jp/get/<pathway_id>/kgml` — fetch the KGML (XML) for each pathway
+
+### 4. Gene Extraction and Deduplication
+
+KGML is parsed with `xml.etree.ElementTree`. Gene nodes are extracted by their `name` attribute (e.g. `hsa:1956`), resolved to HGNC symbols via KEGG gene lookup.
+
+Deduplication happens at two levels:
+- **Intra-pathway**: a `seen` set inside `parse_kgml()` prevents duplicate entries within a single pathway.
+- **Inter-pathway**: a `seen_symbols` set in `build_gene_receptor_ligand_table()` ensures each gene symbol appears only once across all pathways.
+
+### 5. Parallel Gene Annotation
+
+For each unique gene symbol, three external APIs are queried in parallel using `ThreadPoolExecutor` (5 workers):
+
+- **UniProt**: `https://rest.uniprot.org/uniprotkb/search?query=gene:<symbol>+AND+organism_id:9606` — returns protein name, function, keywords (receptor/ligand), and PDB cross-references
+- **PubChem Gene lookup**: `https://pubchem.ncbi.nlm.nih.gov/rest/pug/gene/symbol/<symbol>/aids/JSON` — returns assay IDs linked to the gene
+- **PubChem Compound names**: resolves assay IDs to compound names via the PUG REST API
+
+Results from all three are merged into one row per gene.
+
+### 6. User Accounts and History
+
+Passwords are hashed with **bcrypt**. The main `diseasenet.db` stores the `users` table. Each user also gets their own SQLite file at `instance/users/<username>.db` containing a `user_search` table — this keeps search histories isolated per user without polluting the main database.
+
+The `/history` endpoint reads the user's own DB and returns the last 50 searches.
+
+### 7. CSV Export
+
+The frontend POSTs the current table data (as JSON) to `/export_csv`. The backend writes it to a CSV file in `outputs/` and returns it as a file download.
 
 ---
 
-##License
+## API Endpoints
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Home page |
+| GET | `/stream?disease_name=...&disease_id=...` | SSE stream: progress + results |
+| POST | `/process` | Non-streaming search (JSON) |
+| POST | `/suggest` | Fuzzy disease name suggestions |
+| GET | `/diseases` | Full KEGG disease list (cached in memory) |
+| GET | `/diseases/clear` | Clear the in-memory disease list cache |
+| GET | `/diseases/debug` | Debug KEGG connectivity |
+| GET | `/recent_searches` | Last 3 searches (session-global) |
+| GET | `/history` | Current user's search history (requires login) |
+| POST | `/export_csv` | Download results as CSV |
+| GET/POST | `/login` | Login |
+| GET/POST | `/signup` | Sign up |
+| GET | `/logout` | Logout |
+
+---
+
+## Dependencies
+
+```
+flask==3.0.0
+flask-sqlalchemy==3.1.1
+requests==2.31.0
+bcrypt==4.1.2
+rapidfuzz==3.9.7
+gunicorn==21.2.0
+```
 
 ---
 
-##Acknowledgments
+## Notes
 
-- **KEGG** for disease and pathway data
-- **UniProt** for comprehensive protein information
-- **PubChem** for chemical bioactivity data
-- Developed as part of MSc Bioinformatics for Health Sciences at UPF
-
----
-
-##Contact
-
-**Author**: Austin Gilbride, Brigita Medelyte, Revanth Naidu  
-**Institution**: Universitat Pompeu Fabra (UPF)/Universitat de Barcelona  
-**Program**: MSc Bioinformatics for Health Sciences  
-**Year**: 2024-2025
-
----
+- All external APIs (KEGG, UniProt, PubChem) are free and require no authentication.
+- Search time is typically 15–60 seconds depending on the number of pathways and genes.
+- SQLite is used for simplicity; switching to MySQL/PostgreSQL requires only changing the `SQLALCHEMY_DATABASE_URI` in `app.py`.
+- The production server must use Gunicorn with `gthread` workers (not the default `sync` worker) to support SSE streaming.
