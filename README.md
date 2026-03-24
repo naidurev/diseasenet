@@ -12,7 +12,7 @@ A bioinformatics web application that maps human diseases to their associated ge
 
 DiseaseNet lets you type any human disease name and get back a detailed table of genes involved in that disease's pathways, with protein annotations, receptor/ligand classification, associated drug compounds, and links to 3D protein structures.
 
-Developed as part of the **Databases and Web Design** course in the MSc Bioinformatics for Health Sciences programme at **Universitat Pompeu Fabra (UPF) / Universitat de Barcelona**, 2024–2025.
+Developed as part of the **Databases and Web Design** course in the MSc Bioinformatics for Health Sciences programme at **Universitat Pompeu Fabra (UPF) / Universitat de Barcelona**, 2025–2027.
 
 **Authors**: Austin Gilbride · Brigita Medelyte · Revanth Naidu
 
