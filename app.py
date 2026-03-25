@@ -327,7 +327,7 @@ def export_csv():
     with open(filepath, 'w', newline='', encoding='utf-8') as f:
         f.write(output.getvalue())
     
-    return send_file(filepath, as_attachment=True, download_name=filename)
+    return send_file(filepath, as_attachment=True, attachment_filename=filename)
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True)
