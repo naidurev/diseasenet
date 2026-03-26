@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% if mode == 'login' %}Login{% else %}Sign Up{% endif %} - DiseaseNet</title>
-    <link rel="icon" type="image/png" href="/static/images/DiseaseNet_logo.png">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/DiseaseNet_logo.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
@@ -14,7 +14,7 @@
             height: 100%; 
             font-family: 'Montserrat', sans-serif; 
             letter-spacing: 0.5px;
-            background-image: url('/static/images/image.png');
+            background-image: url('{{ url_for('static', filename='images/image.png') }}');
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
@@ -159,9 +159,9 @@
             
             <div class="link">
                 {% if mode == 'login' %}
-                    Don't have an account? <a href="/signup">Sign up</a>
+                    Don't have an account? <a href="{{ url_for('signup') }}">Sign up</a>
                 {% else %}
-                    Already have an account? <a href="/login">Login</a>
+                    Already have an account? <a href="{{ url_for('login') }}">Login</a>
                 {% endif %}
             </div>
         </div>
@@ -187,7 +187,7 @@
             
             errorDiv.style.display = 'none';
             
-            fetch('{% if mode == "login" %}/login{% else %}/signup{% endif %}', {
+            fetch('{% if mode == "login" %}{{ url_for('login') }}{% else %}{{ url_for('signup') }}{% endif %}', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({username, password})
@@ -195,7 +195,7 @@
             .then(r => r.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = '/';
+                    window.location.href = '{{ url_for('home') }}';
                 } else {
                     errorDiv.textContent = data.error || 'An error occurred';
                     errorDiv.style.display = 'block';

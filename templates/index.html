@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DiseaseNet</title>
-    <link rel="icon" type="image/png" href="/static/images/DiseaseNet_logo.png">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/DiseaseNet_logo.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
@@ -15,7 +15,7 @@
         .login-btn, .logout-btn, .history-btn { padding: 8px 20px; background-color: rgba(255,255,255,0.1); color: white; border: 2px solid white; cursor: pointer; font-size: 0.9rem; border-radius: 5px; transition: all 0.3s; text-decoration: none; display: inline-block; }
         .login-btn:hover, .logout-btn:hover, .history-btn:hover { background-color: rgba(255,255,255,0.25); transform: translateY(-2px); }
         
-        .shared-background { background-image: url('/static/images/image.png'); background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; position: relative; padding-top: 60px; }
+        .shared-background { background-image: url('{{ url_for('static', filename='images/image.png') }}'); background-size: cover; background-position: center; background-attachment: fixed; min-height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; text-align: center; position: relative; padding-top: 60px; }
         .shared-background::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.3); z-index: 1; }
         .shared-background > * { z-index: 2; }
         
@@ -39,7 +39,7 @@
         .progress-bar { width: 100%; height: 30px; background-color: rgba(255,255,255,0.2); border: 2px solid white; border-radius: 15px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, #75331e, #a0522d); width: 0%; transition: width 0.3s ease; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
         
-        #results-page { display: none; background-image: url('/static/images/image.png'); background-size: cover; background-position: center; background-attachment: fixed; color: white; padding: 80px 20px 20px 20px; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; flex-direction: column; }
+        #results-page { display: none; background-image: url('{{ url_for('static', filename='images/image.png') }}'); background-size: cover; background-position: center; background-attachment: fixed; color: white; padding: 80px 20px 20px 20px; position: fixed; top: 0; left: 0; right: 0; bottom: 0; overflow: hidden; flex-direction: column; }
         #results-page::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.7); z-index: 1; }
         #results-page > * { position: relative; z-index: 2; }
         
@@ -132,10 +132,10 @@
             {% if user %}
                 <span>{{ user.username }}</span>
                 <button class="history-btn" onclick="showHistory()">History</button>
-                <a href="/logout" class="logout-btn">Logout</a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
             {% else %}
-                <a href="/login" class="login-btn">Login</a>
-                <a href="/signup" class="login-btn">Sign Up</a>
+                <a href="{{ url_for('login') }}" class="login-btn">Login</a>
+                <a href="{{ url_for('signup') }}" class="login-btn">Sign Up</a>
             {% endif %}
         </div>
     </div>
@@ -271,7 +271,7 @@
             const input = document.getElementById('disease_name').value;
             const dropdown = document.getElementById('autocomplete-dropdown');
             if (input.length < 2) { dropdown.style.display = 'none'; return; }
-            fetch('/suggest', {
+            fetch('{{ url_for('suggest') }}', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({disease_name: input})
@@ -297,7 +297,7 @@
         }
 
         function loadRecentSearches() {
-            fetch('/recent_searches')
+            fetch('{{ url_for('get_recent_searches') }}')
             .then(r => r.json())
             .then(searches => {
                 if (searches.length > 0) {
@@ -391,7 +391,7 @@
 
             if (activeEventSource) activeEventSource.close();
 
-            let url = `/stream?disease_name=${encodeURIComponent(diseaseName)}`;
+            let url = `{{ url_for('stream') }}?disease_name=${encodeURIComponent(diseaseName)}`;
             if (diseaseId) url += `&disease_id=${encodeURIComponent(diseaseId)}`;
             activeEventSource = new EventSource(url);
 
@@ -551,7 +551,7 @@
 
         function exportToCSV() {
             const diseaseName = document.getElementById('disease-name-result').textContent;
-            fetch('/export_csv', {
+            fetch('{{ url_for('export_csv') }}', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({data: currentData, disease_name: diseaseName})
@@ -569,7 +569,7 @@
         
 
         function showHistory() {
-            fetch('/history')
+            fetch('{{ url_for('history') }}')
             .then(r => r.json())
             .then(searches => {
                 const list = document.getElementById('history-list');
@@ -662,7 +662,7 @@
         }
 
         function loadKeggDiseases() {
-            fetch('/diseases')
+            fetch('{{ url_for('get_diseases') }}')
             .then(r => r.json())
             .then(diseases => {
                 allKeggDiseases = diseases;

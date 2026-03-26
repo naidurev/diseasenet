@@ -1,6 +1,6 @@
 from db import db
 from db.models import Disease, Gene, UserSearch, User
-from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, send_file, Response, stream_with_context, session, redirect, url_for, url_for
 import os
 import json
 import csv
@@ -130,7 +130,7 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('user', None)
-    return redirect('/')
+    return redirect(url_for('home'))
 
 @app.route('/history')
 def history():
@@ -328,6 +328,13 @@ def export_csv():
         f.write(output.getvalue())
     
     return send_file(filepath, as_attachment=True, attachment_filename=filename)
+
+import config
+from werkzeug.middleware.dispatcher import DispatcherMiddleware
+from werkzeug.exceptions import NotFound
+
+hostedApp = Flask(__name__)
+hostedApp.wsgi_app = DispatcherMiddleware(NotFound(), {config.PREFIX: app.wsgi_app})
 
 if __name__ == '__main__':
     app.run(debug=True, threaded=True)
